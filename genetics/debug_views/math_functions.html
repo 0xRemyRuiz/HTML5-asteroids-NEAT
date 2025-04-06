@@ -1,0 +1,117 @@
+<!Doctype html>
+<html>
+  <head></head>
+  <body>
+    <h1>Activation function list and draw</h1>
+    <script type="text/javascript" src="../neural_network.js"></script>
+    <script type="text/javascript">
+      $body = document.getElementsByTagName("body")[0]
+
+      class MathFunctionCanva {
+        name = null
+        func = null
+        $el = null
+        Ctx = null
+        step = 0
+        MaxX = 6
+        MinX = -6
+        MaxY = 3
+        MinY = -3
+        YTickDelta = 1
+        XTickDelta = 1
+
+        constructor(name, func) {
+          this.name = name
+          this.func = func
+
+          this.$el = document.createElement('canvas')
+          this.$el.id = 'canva-function-'+this.name
+          this.$el.width = 900
+          this.$el.height = 300
+          this.$el.style.border = '1px solid'
+
+          this.step = (this.MaxX - this.MinX) / this.$el.width
+          // this.MaxY = this.MaxX * this.$el.height / this.$el.width
+          // this.MinY = this.MinX * this.$el.height / this.$el.width
+
+          this.Ctx = this.$el.getContext('2d')
+        }
+
+        getElement() {
+          return this.$el
+        }
+
+        // Returns the physical x-coordinate of a logical x-coordinate:
+        XC(x) {
+          return (x - this.MinX) / (this.MaxX - this.MinX) * this.$el.width
+        }
+
+        // Returns the physical y-coordinate of a logical y-coordinate:
+        YC(y) {
+          return this.$el.height - (y - this.MinY) / (this.MaxY - this.MinY) * this.$el.height
+        }
+
+        Draw() {
+          this.Ctx.clearRect(0, 0, this.$el.width, this.$el.height)
+          this.Ctx.strokeStyle = 'grey'
+
+          // Draw Axes
+          this.Ctx.lineWidth = 1
+
+          // Y axis tick marks
+          for (var i = this.MinY; (i * this.YTickDelta) < this.MaxY; ++i) {
+            this.Ctx.beginPath()
+            // this.Ctx.moveTo(this.XC(0) - 5, this.YC(i * this.YTickDelta))
+            // this.Ctx.lineTo(this.XC(0) + 5, this.YC(i * this.YTickDelta))
+            this.Ctx.moveTo(0, this.YC(i * this.YTickDelta))
+            this.Ctx.lineTo(this.$el.width, this.YC(i * this.YTickDelta))
+            this.Ctx.stroke()  
+          }
+
+          // X tick marks
+          for (var i = this.MinX; (i * this.XTickDelta) < this.MaxX; ++i) {
+            this.Ctx.beginPath()
+            // this.Ctx.moveTo(this.XC(i * this.XTickDelta), this.YC(0) - 5)
+            // this.Ctx.lineTo(this.XC(i * this.XTickDelta), this.YC(0) + 5)
+            this.Ctx.moveTo(this.XC(i * this.XTickDelta), 0)
+            this.Ctx.lineTo(this.XC(i * this.XTickDelta), this.$el.height)
+            this.Ctx.stroke()  
+          }
+
+          this.Ctx.lineWidth = 2
+
+          // Y axis
+          this.Ctx.beginPath()
+          this.Ctx.moveTo(this.XC(0), this.YC(this.MinY))
+          this.Ctx.lineTo(this.XC(0), this.YC(this.MaxY))
+          this.Ctx.stroke()
+
+          // X axis
+          this.Ctx.beginPath()
+          this.Ctx.moveTo(this.XC(this.MinX), this.YC(0))
+          this.Ctx.lineTo(this.XC(this.MaxX), this.YC(0))
+          this.Ctx.stroke()
+
+          // Render function
+          this.Ctx.beginPath()
+          this.Ctx.strokeStyle = 'blue'
+          this.Ctx.moveTo(this.XC(this.MinX), this.YC(this.func(this.MinX)))
+          for (var x = this.MinX + this.step; x <= this.MaxX; x += this.step) {
+            this.Ctx.lineTo(this.XC(x), this.YC(this.func(x)))
+          }
+          this.Ctx.stroke()
+        }
+      }
+
+      // loops through implemented activation functions and draw each on a different canva
+      for (const name in activation) {
+        const canva = new MathFunctionCanva(name, activation[name])
+        const canva_name = document.createElement('h3')
+        canva_name.innerHTML = name
+        $body.appendChild(canva_name)
+        $body.appendChild(canva.getElement())
+        canva.Draw()
+      }
+    </script>
+  </body>
+</html>

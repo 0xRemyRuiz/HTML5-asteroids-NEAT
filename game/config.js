@@ -1,0 +1,27 @@
+
+WEBSOCKET_PORT = 3000
+
+CANVAS_WIDTH = 800
+CANVAS_HEIGHT = 600
+
+
+// original default speed
+GAME_PACE_SPEED_MOD = 1 / 30
+BASE_TIMER = 1e3
+BIG_ALIEN_TIMER = 30e3
+END_GAME_RESTART_TIMER = 5e3
+// TODO: make this work or abandon the idea (might not be useful anyway...)
+DO_NOT_RENDER = false
+SPEED_FACTOR = 1
+RQ_FRAME_TIMER_SPEED_FACTOR = 1
+
+// LEARNING_MODE = false
+
+// if (LEARNING_MODE === true) {
+// 	DO_NOT_RENDER = true
+// 	SPEED_FACTOR = 1
+// 	GAME_PACE_SPEED_MOD *= SPEED_FACTOR
+// 	BIG_ALIEN_TIMER /= SPEED_FACTOR
+// 	BASE_TIMER /= SPEED_FACTOR
+// 	END_GAME_RESTART_TIMER = 1 // to test
+// }

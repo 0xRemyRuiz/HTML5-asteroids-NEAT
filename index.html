@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+  <head>
+    <script type="text/javascript" src="libs/jquery-3.7.1.min.js"></script>
+    <!-- initial libraries used -->
+    <!-- <script type="text/javascript" src="libs/jquery-browser.js"></script> -->
+    <!-- <script type="text/javascript" src="libs/jquery-1.4.1.min.js"></script> -->
+    <script type="text/javascript" src="libs/vector_battle_regular.typeface.js"></script>
+    <style>
+      .button { border:1px solid black; }
+      .button.active { background-color: #FFE082 }
+      .button.ai.active { background-color: #5C6BC0 }
+      body { margin: 0; padding: 0; }
+      html > body .no-space { margin: 0 !important; padding: 0 !important; }
+      html > body .no-vertical-space { margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+      #value-panel { visibility: hidden }
+      #game-container { padding: 0; width: 100vw; height: 1000px; display: inline-block; }
+      #canvas { border:1px solid black; top:0px; left:0px; }
+      #panel-holder { vertical-align: top; display: inline-block; }
+      #player-stats-panel { display: none; }
+      #ennemies-list-panel { display: block; }
+      #autoplay-container.true { color: blue }
+
+      .watch-controls-holder { text-align: center; display: block; margin: 10px 0; }
+      .watch-controls-holder > div { display: inline-block; }
+      .watch-controls-holder > div.up { width:20px; height:20px; }
+      .watch-controls-holder > div.left { width:20px; height:20px; }
+      .watch-controls-holder > div.right { width:20px; height:20px; }
+      .watch-controls-holder > div.space { width: 40px; height:20px; }
+
+      #left-controls { position:absolute; left:1px; bottom:0px; display:none; }
+      #right-controls { position:absolute; right:1px; bottom:0px; display:none; }
+      #up { width:200px; height:100px; bottom:100px;}
+      #left { width:100px; height:100px; bottom:0px;}
+      #right { width:100px; height:100px; bottom:0px; left:100px; }
+      #space { width:200px; height:200px; bottom:0px; right:0px; }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+      <!-- <canvas id="canvas"></canvas> -->
+      <canvas id="canvas" width="800" height="600"></canvas>
+      <div id="panel-holder">
+        <div id="no-websocket" style="color: orange; font-style: bold">WARNING: Websocket not connected</div>
+        <div class="watch-controls-holder">
+          <div style="vertical-align: bottom;">AI ORDER:</div>
+          <div id="watch-ai-left" class="left ai button">←</div>
+          <div id="watch-ai-up" class="up ai button">↑</div>
+          <div id="watch-ai-right" class="right ai button">→</div>
+          <div id="watch-ai-space" class="space ai button">space</div>
+        </div>
+        <div class="watch-controls-holder">
+          <div style="vertical-align: bottom;">INPUTS:</div>
+          <div id="watch-left" class="left button">←</div>
+          <div id="watch-up" class="up button">↑</div>
+          <div id="watch-right" class="right button">→</div>
+          <div id="watch-space" class="space button">space</div>
+        </div>
+        <div>press n to toggle value panel</div>
+        <!-- TODO: add a player move visual watcher -->
+        <div id="value-panel">
+          <div id="keycodes">
+            <h3 class="no-space">Keycodes</h3>
+            <ul class="no-vertical-space">
+              <li>f : show frames</li>
+              <li>u : reset current game</li>
+              <li>p : pause current game</li>
+              <li>b : switch displayed panel</li>
+              <li>d : render danger detection (current = <span id="render-danger-direction">none</span>)</li>
+              <li id="autoplay-container">a : switch autoplay (current = <span id="autoplay-status">false</span>)</li>
+              <li>m : mute SFX (current = <span id="SFX-muted">true</span>)</li>
+            </ul>
+          </div>
+          <div id="player-stats-panel">
+            <h3 class="no-vertical-space">Player stats</h3>
+            <span>Score: <span id="player_score"></span> Health: <span id="player_health"></span><br></span>
+            <span>Speed on X: <span id="player_speed_x"></span><br></span>
+            <span>Speed on Y: <span id="player_speed_y"></span><br></span>
+            <span>Orientation: <span id="player_orientation"></span><br></span>
+            <span>Position: <span id="player_position"></span><br></span>
+          </div>
+          <div id="ennemies-list-panel">
+            <h3 class="no-vertical-space">Ennemies list</h3>
+            <ul class="no-vertical-space" id="ennemies-list"></ul>
+          </div>
+        </div>
+      </div>
+      <div id="left-controls">
+        <div id="up" class='button'>THRUST</div>
+        <div id="left" class='button'>LEFT</div>
+        <div id="right" class='button'>RIGHT</div>
+      </div>
+      <div id="right-controls">
+        <div id="space" class='button'>FIRE</div>
+      </div>
+    </div>
+    <script type="text/javascript" src="game/config.js"></script>
+    <script type="text/javascript" src="game/ipad.js"></script>
+    <script type="text/javascript" src="game/controls.js"></script>
+    <script type="text/javascript" src="game/game-objects.js"></script>
+    <script type="text/javascript" src="game/text.js"></script>
+    <script type="text/javascript" src="game/audio.js"></script>
+    <script type="text/javascript" src="game/autoplay.js"></script>
+    <script type="text/javascript" src="game/game.js"></script>
+    <script type="text/javascript" src="game/main.js"></script>
+  </body>
+</html>
