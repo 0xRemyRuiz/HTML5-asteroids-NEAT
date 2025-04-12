@@ -313,20 +313,32 @@ $(function () {
 
         dangerList.push({...danger})
       }
+      dangerList.sort((a, b) => {
+        if (a.dist <= b.dist) {
+          return -1
+        }
+        return 1
+      })
     }
 
     if (webSocketConnected && autoplay_is_on) {
       webSocketInstance.send(JSON.stringify({
         state: Game.FSM.state,
-        player: {
-          score: Game.score,
-          velX: ship.vel.x,
-          velY: ship.vel.y,
-          rot: ship.rot,
-          x: ship.x,
-          y: ship.y,
-        },
-        dangers: dangerList,
+        player: [
+          Game.score,
+          ship.vel.x,
+          ship.vel.y,
+          ship.rot,
+          ship.x,
+          ship.y,
+          // 1st closest danger
+          dangerList[0] || -1,
+          dangerList[1] || -1,
+          dangerList[2] || -1,
+          dangerList[3] || -1,
+          // 5th closest danger
+          dangerList[4] || -1,
+        ],
       }))
     }
 
