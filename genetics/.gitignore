@@ -1,2 +1,5 @@
 node_modules/
 example_implementation_non_functional.js
+neat-python-recurrent-impl.py
+neat-python-feed-forward-impl.py
+tests/
