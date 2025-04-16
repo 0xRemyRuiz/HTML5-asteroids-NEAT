@@ -78,11 +78,11 @@ export class Network {
   }
 
   get_random_connection() {
-    return this.connections[Math.random() * this.connections.length - 1]
+    return this.connections[Math.floor(Math.random() * this.connections.length)]
   }
 
   get_random_node() {
-    return this.nodes[Math.random() * this.nodes.length - 1]
+    return this.nodes[Math.floor(Math.random() * this.nodes.length)]
   }
 
   add_node(connection) {
