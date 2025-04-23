@@ -305,10 +305,10 @@ $(function () {
               }
           }
         }
-
-
         dangerList.push({...danger})
       }
+
+      // sort dangers
       dangerList.sort((a, b) => {
         if (a.dist <= b.dist) {
           return -1
@@ -316,7 +316,7 @@ $(function () {
         return 1
       })
       //-- DEBUG VISUALIZATION
-      listHTML = ""
+      listHTML = ''
       for (let k in dangerList) {
         listHTML += `<li>${dangerList[k].name} ${dangerList[k].x}x / ${dangerList[k].y}y => ${dangerList[k].dist} dist ${dangerList[k].dir}°</li>`
       }
@@ -432,11 +432,11 @@ $(function () {
 
   var $value_panel = null
   $(window).keydown(function (e) {
-    // TODO: hook learning mode here
     switch (KEY_CODES[e.keyCode]) {
       case 'f': // show framerate
-        showFramerate = !showFramerate;
-        break;
+        showFramerate = !showFramerate
+        break
+
       case 'd':
         if (renderDangerDirection == 'none') {
           renderDangerDirection = 'min'
@@ -447,11 +447,13 @@ $(function () {
         }
         $renderDangerDirection.html(renderDangerDirection)
         break
+
       case 'u': // reset
         if (!autoplay_is_on) {
           Game.FSM.start()
         }
-        break;
+        break
+
       case 'n':
         if ($value_panel == null) {
           $value_panel = $("#value-panel")
@@ -461,7 +463,8 @@ $(function () {
         } else {
           $value_panel.css('visibility', 'hidden')
         }
-      break
+        break
+
       case 'p': // pause
         paused = !paused;
         if (!paused) {
@@ -470,26 +473,29 @@ $(function () {
           mainLoop();
         }
         break;
+
       case 'a':
-        autoplay_is_on = !autoplay_is_on
-        if (autoplay_is_on) {
-          $('#autoplay-container').addClass('true')
-          for (k in KEY_STATUS) {
-            KEY_STATUS[k] = false
-            // LAST_AI_BUTTON_COMMAND[k] = false
+        if (webSocketConnected) {
+          autoplay_is_on = !autoplay_is_on
+          if (autoplay_is_on) {
+            $('#autoplay-container').addClass('true')
+            for (k in KEY_STATUS) {
+              KEY_STATUS[k] = false
+            }
+            console.log("sending ", {state: Game.FSM.state}, " to the server")
+            webSocketInstance.send(JSON.stringify({
+              state: Game.FSM.state,
+            }))
+          } else {
+            $('#autoplay-container').removeClass('true')
+            for (k in KEY_STATUS) {
+              KEY_STATUS[k] = false
+            }
           }
-          webSocketInstance.send(JSON.stringify({
-            state: Game.FSM.state,
-          }))
-        } else {
-          $('#autoplay-container').removeClass('true')
-          for (k in KEY_STATUS) {
-            KEY_STATUS[k] = false
-            // LAST_AI_BUTTON_COMMAND[k] = false
-          }
+          $('#autoplay-status').html(autoplay_is_on ? 'true' : 'false')
         }
-        $('#autoplay-status').html(autoplay_is_on ? 'true' : 'false')
-        break;
+        break
+
       case 'b':
         if (!playerPanel) {
           ennemiesPanel = false
@@ -502,11 +508,12 @@ $(function () {
           $('#player-stats-panel').hide()
           $('#ennemies-list-panel').show()
         }
-        break;
+        break
+
       case 'm': // mute
-        SFX.muted = !SFX.muted;
+        SFX.muted = !SFX.muted
         $('#SFX-muted').html(SFX.muted.toString())
-        break;
+        break
     }
   });
 });

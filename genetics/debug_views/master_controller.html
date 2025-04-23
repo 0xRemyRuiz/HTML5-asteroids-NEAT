@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script type="text/javascript" src="../libs/jquery-3.7.1.min.js"></script>
+  <script type="text/javascript" src="../../libs/jquery-3.7.1.min.js"></script>
   <style type="text/css">
     #command-holder { margin: 5px 0; display: none }
     #command-holder input { width: 75px }
@@ -16,11 +16,8 @@
   <h3>Puppet Master</h3>
   <button id="no-websocket" onclick="addWebSocketListeners()">Click to connect to websocket</button>
   <div id="command-holder">
-    <label for="commander">Type command: </label><input id="commander" name="commander" type="text" placeholder="command" /><button onclick="send_command()">SEND</button><button onclick="webSocketInstance.send(JSON.stringify({}))">send empty</button>
+    <label for="commander">Type command: </label><input id="commander" name="commander" type="text" placeholder="command" /><button onclick="send_command()">SEND</button>
     <p id="response" style="margin: 5px"></p>
-  </div>
-  <div id="no-game">
-    Currently no game is running.
   </div>
   <div id="status-holder">
     <span>Game: <span id="game-name"></span></span>
@@ -79,7 +76,7 @@
       console.log('Connection to websocket made!')
       webSocketConnected = true
       $('#no-websocket').hide()
-      $('#no-game').show()
+      $('#status-holder').show()
       $('#command-holder').show()
       if ($status === null) $status = $('#status')
       if ($game_name === null) $game_name = $('#game-name')
@@ -110,11 +107,6 @@
           } else {
             $('#status').html(parsedData.status)
             if (parsedData.name) {
-              if (no_game) {
-                no_game = false
-                $('#no-game').hide()
-                $('#status-holder').show()
-              }
               $game_name.html(parsedData.name)
               $client_number.html(parsedData.client_connected)
               $generation_number.html(parsedData.generation_number)
@@ -136,10 +128,7 @@
 
     const removeWebSocketListeners = () => {
       $('#no-websocket').show()
-      $('#no-game').hide()
-      $('#status-holder').hide()
-      $('#command-holder').hide()
-      $('#response').html('')
+      $('#response').html('<span style="color: orange">WARNING: web socket disconnection</span>')
       webSocketConnected = false
       webSocketInstance.removeEventListener('open', onopen)
       webSocketInstance.removeEventListener('message', onmessage)
@@ -152,6 +141,7 @@
       if (webSocketInstance !== null) return
       const url = 'ws://localhost:'+WEBSOCKET_PORT
       console.log('trying to connect to websocket: '+url)
+      $('#response').html('')
       webSocketInstance = new WebSocket(url)
       webSocketInstance.addEventListener('open', onopen)
       webSocketInstance.addEventListener('message', onmessage)

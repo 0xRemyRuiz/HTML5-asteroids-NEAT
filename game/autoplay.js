@@ -26,25 +26,25 @@ const onopen = (event) => {
 const onmessage = (event) => {
   try {
     const parsedData = JSON.parse(event.data)
-    if (parsedData.msg == 'who are you') {
+    if (parsedData.msg == 'who are you' || parsedData.msg === 'game change') {
       webSocketInstance.send(JSON.stringify({ msg: 'game', game: 'asteroids' }))
       return
     }
+
     if (autoplay_is_on) {
-      if (parsedData.msg === 'game change') {
-        webSocketInstance.send(JSON.stringify({ msg: 'game', game: 'asteroids' }))
-        return
-      }
-      if (parsedData.game !== "asteroids") {
+      if (parsedData.name !== 'asteroids') {
         if (wrong_game_warning) {
-          console.error('Wrong game client for started neat instance:', parsedData.game)
+          console.error('Wrong game client for started neat instance:', parsedData.name)
           wrong_game_warning = false
         }
         return
       }
+
+      // wrong_game_warning variable prevents from spamming the error
       wrong_game_warning = true
+
       // TODO: change this
-      if (parsedData.msg == "restart") {
+      if (parsedData.msg == 'restart') {
         if (Game.FSM.state == 'waiting') {
           Game.FSM.state = 'start'
         } else {
@@ -53,6 +53,7 @@ const onmessage = (event) => {
       } else {
         // load what button ai is asking to press
         LAST_AI_BUTTON_COMMAND = {...parsedData}
+        // DO NOT MODIFY!
         // IMPORTANT: simulate keystroke "collisions" on a real keyboard (so the simulation is close to what a human on a keyboard can do)
         ;(() => {
           if (!KEY_STATUS.up && !KEY_STATUS.left && !KEY_STATUS.right && !KEY_STATUS.space
@@ -81,14 +82,19 @@ const onmessage = (event) => {
         KEY_STATUS = {...parsedData};
       }
     }
-  } catch(e) {
 
-  }
+  } catch(e) {console.error(e)}
 }
 
 const removeWebSocketListeners = () => {
   $('#no-websocket').show()
   webSocketConnected = false
+
+  autoplay_is_on = false
+  $('#autoplay-container').removeClass('true')
+  for (k in KEY_STATUS) { KEY_STATUS[k] = false }
+  $('#autoplay-status').html('false')
+
 
   webSocketInstance.removeEventListener('open', onopen)
   webSocketInstance.removeEventListener('message', onmessage)
