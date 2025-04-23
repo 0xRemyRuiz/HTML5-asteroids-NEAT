@@ -1,70 +1,75 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer } from 'ws'
+import xor from './games/xor.js' 
+import asteroids from './games/asteroids.js'
+import master_controller from './master_controller.js'
 
 const PORT = parseInt(process.argv[2]) || 3000
-const TEST_MODE = false
-const wss = new WebSocketServer({ port: PORT })
 
-console.log("Websocket running on port "+PORT)
+let wss
+try {
+  wss = new WebSocketServer({ port: PORT })
+} catch (e) {
+  console.error(e)
+  exit(1)
+}
 
-const testPossibilities = [
-  JSON.stringify({
-    up: true,
-    left: true,
-    right: true,
-    space: true,
-  }),
-  JSON.stringify({
-    up: true,
-    left: true,
-    right: true,
-    space: false,
-  }),
-  JSON.stringify({
-    up: false,
-    left: true,
-    right: true,
-    space: false,
-  }),
-  JSON.stringify({
-    up: false,
-    left: true,
-    right: false,
-    space: true,
-  }),
-  JSON.stringify({
-    up: false,
-    left: false,
-    right: false,
-    space: true,
-  }),
-]
+console.log('Websocket running on port '+PORT)
+
+const current_game = {
+  status: 'not initialized',
+  name: null,
+  game_order: null,
+  client_connected: 0,
+  generation_number: 0,
+  best_fitness_score: 0,
+  number_finished_game: 0,
+  total_population: 0,
+}
 
 wss.on('connection', (ws) => {
-  // TODO: maybe ID the connection
-  // let newConnection = true
-  let roll = 0
-  console.log('new connection made!')
+  ws.not_initialized = true
+  ws.id = null
+  ws.game = null
+  ws.is_master = false
+  ws.last_order = null
+
+  ws.send(JSON.stringify({ msg: 'who are you' }))
+
   ws.on('error', console.error)
+  ws.on('close', () => {
+    if (ws.game !== null && ws.game === current_game.name) {
+      current_game.client_connected--
+    }
+  })
 
   ws.on('message', (data) => {
-    // TODO: maybe check if last computation has finished and if not skip the message
     const object = JSON.parse(data)
-    // TODO: maybe handle better the "new game thing"
-    if (object.state == "end_game" || object.state == "waiting") {
-      ws.send(JSON.stringify({
-        msg: "restart",
-      }))
-    } else {
-      if (TEST_MODE) {
-        roll++
-        if (roll > testPossibilities.length * 300) {
-          roll = 0
-        }
-        const idx = Math.round(roll / 300)
-        ws.send(testPossibilities[idx])
-      } else {
-        console.log(object)
+
+    if (ws.not_initialized) {
+      if (object.msg === 'master') {
+        ws.is_master = true
       }
+      ws.not_initialized = false
     }
+
+    // TODO: maybe check if last computation has finished and if not skip the message
+    if (ws.is_master === false) {
+      if (object.msg === 'game') {
+        ws.game = object.game
+        if (ws.game === current_game.name) {
+          current_game.client_connected++
+        }
+      }
+
+      // TODO: handle client order spread if current_game.game_order !== ws.last_order
+      if (ws.game === current_game.name === 'xor') {
+        xor(current_game, ws, object)
+      } else if (ws.game === current_game.name === 'asteroids') {
+        asteroids(current_game, ws, object)
+      }
+      return
+    }
+
+    master_controller(wss, current_game, ws, object)
   })
 })

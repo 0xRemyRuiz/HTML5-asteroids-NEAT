@@ -16,11 +16,12 @@
       #game-container { padding: 0; width: 100vw; height: 1000px; display: inline-block; }
       #canvas { border:1px solid black; top:0px; left:0px; }
       #panel-holder { vertical-align: top; display: inline-block; }
+      #panel-holder button { display: inline-block; margin: 5px auto }
       #player-stats-panel { display: none; }
       #ennemies-list-panel { display: block; }
       #autoplay-container.true { color: blue }
 
-      .watch-controls-holder { text-align: center; display: block; margin: 10px 0; }
+      .watch-controls-holder { text-align: center; display: block; margin: 5px 0; }
       .watch-controls-holder > div { display: inline-block; }
       .watch-controls-holder > div.up { width:20px; height:20px; }
       .watch-controls-holder > div.left { width:20px; height:20px; }
@@ -40,7 +41,7 @@
       <!-- <canvas id="canvas"></canvas> -->
       <canvas id="canvas" width="800" height="600"></canvas>
       <div id="panel-holder">
-        <div id="no-websocket" style="color: orange; font-style: bold">WARNING: Websocket not connected</div>
+        <button id="no-websocket" style="color: orange; font-style: bold" onclick="addWebSocketListeners()">WARNING: Websocket not connected (click to connect)</button>
         <div class="watch-controls-holder">
           <div style="vertical-align: bottom;">AI ORDER:</div>
           <div id="watch-ai-left" class="left ai button">←</div>

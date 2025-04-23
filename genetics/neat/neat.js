@@ -4,11 +4,12 @@
 //      cf. medium.com/@nirajsawant2313/a-simple-ai-using-neat-neuroevolution-of-augmenting-topologies-ae1b7d8f4a5e
 //      cf. https://medium.com/data-science/https-medium-com-piotr-skalski92-deep-dive-into-deep-networks-math-17660bc376ba
 //      cf. https://blog.lunatech.com/posts/2024-02-29-the-neat-algorithm-evolving-neural-network-topologies
-//  !!! cf. https://www.youtube.com/watch?v=yVtdp1kF0I4
+// !!!! cf. https://www.youtube.com/watch?v=yVtdp1kF0I4
 //   !! cf. https://www.youtube.com/watch?v=vf18FLdKkY4
-//  !!! cf. https://dev.to/jbahire/demystifying-the-xor-problem-1blk
-// ???? cf. https://www.youtube.com/watch?v=KiW-W4v0nBo
+// !!!! cf. https://dev.to/jbahire/demystifying-the-xor-problem-1blk
+//    ! cf. https://www.youtube.com/watch?v=KiW-W4v0nBo
 // ???? cf. https://www.youtube.com/watch?v=zc5NTeJbk-k
+//  !!! cf. https://www.youtube.com/watch?v=6ym3tTzPSUQ
 
 /**
  * 

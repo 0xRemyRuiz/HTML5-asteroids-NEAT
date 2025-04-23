@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="text/javascript" src="../libs/jquery-3.7.1.min.js"></script>
+  <style type="text/css">
+    #command-holder { margin: 5px 0; display: none }
+    #command-holder input { width: 75px }
+    #command-holder label, #command-holder input, #command-holder button { display: inline-block; margin: 0 5px }
+    #status-holder, #no-game { display: none }
+  </style>
+  <title>Puppet Master</title>
+</head>
+<body>
+  <h3>Puppet Master</h3>
+  <button id="no-websocket" onclick="addWebSocketListeners()">Click to connect to websocket</button>
+  <div id="command-holder">
+    <label for="commander">Type command: </label><input id="commander" name="commander" type="text" placeholder="command" /><button onclick="send_command()">SEND</button><button onclick="webSocketInstance.send(JSON.stringify({}))">send empty</button>
+    <p id="response" style="margin: 5px"></p>
+  </div>
+  <div id="no-game">
+    Currently no game is running.
+  </div>
+  <div id="status-holder">
+    <span>Game: <span id="game-name"></span></span>
+    <ul style="margin: 0">
+      <li>Status: <span id="status"></span></li>
+      <li>Client number: <span id="client-number"></span></li>
+      <li>Current generation number: <span id="generation-number"></span></li>
+      <li>Best fitness score: <span id="best-fitness-score"></span></li>
+      <li>
+        Finished games on total population<br>
+        <span id="number-finished-game"></span>/<span id="total-population"></span>
+      </li>
+    </ul>
+  </div>
+  <script type="text/javascript">
+    var webSocketConnected = false, webSocketInstance = null, no_game = true, WEBSOCKET_PORT = 3000, command_to_send = null
+    var $status = null,
+        $game_name = null,
+        $client_number = null,
+        $generation_number = null,
+        $best_fitness_score = null,
+        $number_finished_game = null,
+        $total_population = null
+
+    function send_command() {
+      const $commander = $('#commander')
+      if ($commander.val()) {
+        if (webSocketConnected) {
+          const idx = $commander.val().indexOf(' ')
+          if (idx != -1) {
+            command_to_send = {
+              command: $commander.val().substring(0, idx),
+              subject: $commander.val().substring(idx + 1),
+            }
+          } else {
+            command_to_send = {
+              command: $commander.val(),
+            }
+          }
+        } else {
+          $('#response').style.backgroundColor = 'red'
+          $('#response').html('Error: websocket not connected')
+        }
+        $commander.val('')
+      }
+    }
+
+    $(window).keyup(function (e) {
+      if (e.keyCode === 13) {
+        e.preventDefault()
+        send_command()
+      }
+    })
+
+    const onopen = () => {
+      console.log('Connection to websocket made!')
+      webSocketConnected = true
+      $('#no-websocket').hide()
+      $('#no-game').show()
+      $('#command-holder').show()
+      if ($status === null) $status = $('#status')
+      if ($game_name === null) $game_name = $('#game-name')
+      if ($client_number === null) $client_number = $('#client-number')
+      if ($generation_number === null) $generation_number = $('#generation-number')
+      if ($best_fitness_score === null) $best_fitness_score = $('#best-fitness-score')
+      if ($number_finished_game === null) $number_finished_game = $('#number-finished-game')
+      if ($total_population === null) $total_population = $('#total-population')
+    }
+
+    const onmessage = (event) => {
+      try {
+        const parsedData = JSON.parse(event.data)
+        if (parsedData.msg === 'who are you') {
+          webSocketInstance.send(JSON.stringify({ msg: 'master' }))
+          return
+        } else {
+          if (parsedData.response) {
+            const $response = $('#response')
+            if (parsedData.code === 'error') {
+              $response.css('color', 'red')
+            } else if (parsedData.code === 'warning') {
+              $response.css('color', 'orange')
+            } else {
+              $response.css('color', 'blue')
+            }
+            $response.html(parsedData.response)
+          } else {
+            $('#status').html(parsedData.status)
+            if (parsedData.name) {
+              if (no_game) {
+                no_game = false
+                $('#no-game').hide()
+                $('#status-holder').show()
+              }
+              $game_name.html(parsedData.name)
+              $client_number.html(parsedData.client_connected)
+              $generation_number.html(parsedData.generation_number)
+              $best_fitness_score.html(parsedData.best_fitness_score)
+              $number_finished_game.html(parsedData.number_finished_game)
+              $total_population.html(parsedData.total_population)
+            }
+          }
+        }
+        // asking new data in continuous flow
+        if (command_to_send !== null) {
+          webSocketInstance.send(JSON.stringify(command_to_send))
+          command_to_send = null
+        } else {
+          webSocketInstance.send(JSON.stringify({}))
+        }
+      } catch(e) {}
+    }
+
+    const removeWebSocketListeners = () => {
+      $('#no-websocket').show()
+      $('#no-game').hide()
+      $('#status-holder').hide()
+      $('#command-holder').hide()
+      $('#response').html('')
+      webSocketConnected = false
+      webSocketInstance.removeEventListener('open', onopen)
+      webSocketInstance.removeEventListener('message', onmessage)
+      webSocketInstance.removeEventListener('error', removeWebSocketListeners)
+      webSocketInstance.removeEventListener('close', removeWebSocketListeners)
+      webSocketInstance = null
+    }
+
+    const addWebSocketListeners = () => {
+      if (webSocketInstance !== null) return
+      const url = 'ws://localhost:'+WEBSOCKET_PORT
+      console.log('trying to connect to websocket: '+url)
+      webSocketInstance = new WebSocket(url)
+      webSocketInstance.addEventListener('open', onopen)
+      webSocketInstance.addEventListener('message', onmessage)
+      webSocketInstance.addEventListener('error', removeWebSocketListeners)
+      webSocketInstance.addEventListener('close', removeWebSocketListeners)
+    }
+  </script>
+</body>
+</html>

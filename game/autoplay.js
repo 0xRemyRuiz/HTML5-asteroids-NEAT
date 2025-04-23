@@ -4,11 +4,13 @@
 // [V] dangers direction (closest one)
 // [V] get the score
 // [V] simulate key stroke
-// [\] handle restart
+// [ ] handle game keystroke lock
+// [ ] handle master commands
 
 var webSocketConnected = false
 var autoplay_is_on = false
-var webSocketInstance
+var webSocketInstance = null
+var wrong_game_warning = true
 var LAST_AI_BUTTON_COMMAND = {
   up: false,
   right: false,
@@ -24,7 +26,24 @@ const onopen = (event) => {
 const onmessage = (event) => {
   try {
     const parsedData = JSON.parse(event.data)
-    if (webSocketConnected && autoplay_is_on) {
+    if (parsedData.msg == 'who are you') {
+      webSocketInstance.send(JSON.stringify({ msg: 'game', game: 'asteroids' }))
+      return
+    }
+    if (autoplay_is_on) {
+      if (parsedData.msg === 'game change') {
+        webSocketInstance.send(JSON.stringify({ msg: 'game', game: 'asteroids' }))
+        return
+      }
+      if (parsedData.game !== "asteroids") {
+        if (wrong_game_warning) {
+          console.error('Wrong game client for started neat instance:', parsedData.game)
+          wrong_game_warning = false
+        }
+        return
+      }
+      wrong_game_warning = true
+      // TODO: change this
       if (parsedData.msg == "restart") {
         if (Game.FSM.state == 'waiting') {
           Game.FSM.state = 'start'
@@ -32,10 +51,10 @@ const onmessage = (event) => {
           Game.FSM.start()
         }
       } else {
-        // simulate keystroke "collisions" on a real keyboard
-        LAST_AI_BUTTON_COMMAND = {...parsedData};
-
-        (() => {
+        // load what button ai is asking to press
+        LAST_AI_BUTTON_COMMAND = {...parsedData}
+        // IMPORTANT: simulate keystroke "collisions" on a real keyboard (so the simulation is close to what a human on a keyboard can do)
+        ;(() => {
           if (!KEY_STATUS.up && !KEY_STATUS.left && !KEY_STATUS.right && !KEY_STATUS.space
             && parsedData.left && parsedData.up
             && (parsedData.right || parsedData.space)) {
@@ -67,36 +86,30 @@ const onmessage = (event) => {
   }
 }
 
-const onerror = (event) => {
-  removeWebSocketListeners()
-}
-
-const onclose = (event) => {
-  removeWebSocketListeners()
-}
-
 const removeWebSocketListeners = () => {
   $('#no-websocket').show()
   webSocketConnected = false
 
   webSocketInstance.removeEventListener('open', onopen)
   webSocketInstance.removeEventListener('message', onmessage)
-  webSocketInstance.removeEventListener('error', onerror)
-  webSocketInstance.removeEventListener('close', onclose)
+  webSocketInstance.removeEventListener('error', removeWebSocketListeners)
+  webSocketInstance.removeEventListener('close', removeWebSocketListeners)
 
+  webSocketInstance = null
   // automatic reconnection attempt
-  addWebSocketListeners()
+  // addWebSocketListeners()
 }
 
 const addWebSocketListeners = () => {
+  if (webSocketInstance !== null) return
+
   const url = 'ws://localhost:'+WEBSOCKET_PORT
-  // console.log('trying to connect to websocket: '+url)
+  console.log('trying to connect to websocket: '+url)
   webSocketInstance = new WebSocket(url)
 
   webSocketInstance.addEventListener('open', onopen)
   webSocketInstance.addEventListener('message', onmessage)
-  webSocketInstance.addEventListener('error', onerror)
-  webSocketInstance.addEventListener('close', onclose)
+  webSocketInstance.addEventListener('error', removeWebSocketListeners)
+  webSocketInstance.addEventListener('close', removeWebSocketListeners)
 }
 
-addWebSocketListeners()

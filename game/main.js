@@ -306,10 +306,6 @@ $(function () {
           }
         }
 
-        //--
-        // DEBUG VISUALIZATION
-        //--
-          listHTML += `<li>${danger.name} ${danger.x}x / ${danger.y}y => ${danger.dist} dist ${danger.dir}°</li>`
 
         dangerList.push({...danger})
       }
@@ -319,25 +315,42 @@ $(function () {
         }
         return 1
       })
+      //-- DEBUG VISUALIZATION
+      listHTML = ""
+      for (let k in dangerList) {
+        listHTML += `<li>${dangerList[k].name} ${dangerList[k].x}x / ${dangerList[k].y}y => ${dangerList[k].dist} dist ${dangerList[k].dir}°</li>`
+      }
     }
 
+    //--
+    // Sends data to the web socket
+    //--
     if (webSocketConnected && autoplay_is_on) {
       webSocketInstance.send(JSON.stringify({
         state: Game.FSM.state,
         player: [
-          Game.score,
           ship.vel.x,
           ship.vel.y,
           ship.rot,
           ship.x,
           ship.y,
           // 1st closest danger
-          dangerList[0] || -1,
-          dangerList[1] || -1,
-          dangerList[2] || -1,
-          dangerList[3] || -1,
+          dangerList[0] && dangerList[0].dist ? dangerList[0].dist : -1,
+          dangerList[0] && dangerList[0].dir ? dangerList[0].dir : -1,
+          dangerList[0] && dangerList[0].target ? 1 : -1,
+          dangerList[1] && dangerList[1].dist ? dangerList[1].dist : -1,
+          dangerList[1] && dangerList[1].dir ? dangerList[1].dir : -1,
+          dangerList[1] && dangerList[1].target ? 1 : -1,
+          dangerList[2] && dangerList[2].dist ? dangerList[2].dist : -1,
+          dangerList[2] && dangerList[2].dir ? dangerList[2].dir : -1,
+          dangerList[2] && dangerList[2].target ? 1 : -1,
+          dangerList[3] && dangerList[3].dist ? dangerList[3].dist : -1,
+          dangerList[3] && dangerList[3].dir ? dangerList[3].dir : -1,
+          dangerList[3] && dangerList[3].target ? 1 : -1,
           // 5th closest danger
-          dangerList[4] || -1,
+          dangerList[4] && dangerList[4].dist ? dangerList[4].dist : -1,
+          dangerList[4] && dangerList[4].dir ? dangerList[4].dir : -1,
+          dangerList[4] && dangerList[4].target ? 1 : -1,
         ],
       }))
     }
