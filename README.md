@@ -7,12 +7,12 @@ It's main purpose is for me to learn by doing.
 INSTALL and RUN
 ---------------
 Just open the `index.html` file on your favorite browser and try to get a highscore.
-The game is playable by itself, no need of npm which only handles the training an autoplay of the AI agent.
+The game is playable by itself, no need of npm which only handles the training of IA agents an autoplay of the game.
 
 To run the NEAT algorithm for training and autoplay first install the node handler.
 `cd genetics`
 `npm install`
-Then use `npm run start [port]`.
+Then either use `npm run start` or `npm run start [port]`.
 Base port is 3000 but if you already have a service running on that port you can specify another one.
 In the case you want to change the port without specifying in the command, change the config value `WEBSOCKET_PORT` in `game/config.js`.
 Remember to do the same in every html clients (such as `game/config.js` file or in the `genetics/debug_views/master_controller.html`).
