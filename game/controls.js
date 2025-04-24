@@ -1,3 +1,6 @@
+
+LOCK_KEYSTROKE = false
+
 KEY_CODES = {
   32: 'space',
   37: 'left',
@@ -21,31 +24,41 @@ for (code in KEY_CODES) {
   KEY_STATUS[KEY_CODES[code]] = false;
 }
 
+
+const handle_strokes = (e) => {
+  // autoplay bypass
+  if (webSocketConnected && (autoplay_is_on || LOCK_KEYSTROKE) && e.keyCode >= 32 && e.keyCode <= 39) {
+    e.preventDefault()
+    return true
+  }
+
+  return false
+}
+
 $(window)
 
 .keydown(function (e) {
-  // autoplay bypass
-  if (webSocketConnected && autoplay_is_on && e.keyCode >= 32 && e.keyCode <= 39) {
-    e.preventDefault() 
+  if (handle_strokes(e)) {
     return
   }
-  KEY_STATUS.keyDown = true;
-  // console.log(e.keyCode)
+
+  KEY_STATUS.keyDown = true
+  console.log("in", e.keyCode)
   if (KEY_CODES[e.keyCode]) {
-    e.preventDefault();
-    KEY_STATUS[KEY_CODES[e.keyCode]] = true;
+    e.preventDefault()
+    KEY_STATUS[KEY_CODES[e.keyCode]] = true
   }
 })
 
 .keyup(function (e) {
-  // autoplay bypass
-  if (webSocketConnected && autoplay_is_on && e.keyCode >= 32 && e.keyCode <= 39) {
-    e.preventDefault()
+  if (handle_strokes(e)) {
     return
   }
-  KEY_STATUS.keyDown = false;
+
+  KEY_STATUS.keyDown = false
+  console.log("out", e.keyCode)
   if (KEY_CODES[e.keyCode]) {
-    e.preventDefault();
-    KEY_STATUS[KEY_CODES[e.keyCode]] = false;
+    e.preventDefault()
+    KEY_STATUS[KEY_CODES[e.keyCode]] = false
   }
-});
+})

@@ -20,6 +20,7 @@
       #player-stats-panel { display: none; }
       #ennemies-list-panel { display: block; }
       #autoplay-container.true { color: blue }
+      #lock_is_on { display: none }
 
       .watch-controls-holder { text-align: center; display: block; margin: 5px 0; }
       .watch-controls-holder > div { display: inline-block; }
@@ -56,7 +57,7 @@
           <div id="watch-right" class="right button">→</div>
           <div id="watch-space" class="space button">space</div>
         </div>
-        <div>press n to toggle value panel</div>
+        <div>press n to toggle value panel<span id="lock_is_on"> (🔒 lock on)</span></div>
         <!-- TODO: add a player move visual watcher -->
         <div id="value-panel">
           <div id="keycodes">

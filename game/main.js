@@ -449,6 +449,9 @@ $(function () {
         break
 
       case 'u': // reset
+        if (LOCK_KEYSTROKE) {
+          break
+        }
         if (!autoplay_is_on) {
           Game.FSM.start()
         }
@@ -466,6 +469,9 @@ $(function () {
         break
 
       case 'p': // pause
+        if (LOCK_KEYSTROKE) {
+          break
+        }
         paused = !paused;
         if (!paused) {
           // start up again
@@ -474,26 +480,11 @@ $(function () {
         }
         break;
 
-      case 'a':
-        if (webSocketConnected) {
-          autoplay_is_on = !autoplay_is_on
-          if (autoplay_is_on) {
-            $('#autoplay-container').addClass('true')
-            for (k in KEY_STATUS) {
-              KEY_STATUS[k] = false
-            }
-            console.log("sending ", {state: Game.FSM.state}, " to the server")
-            webSocketInstance.send(JSON.stringify({
-              state: Game.FSM.state,
-            }))
-          } else {
-            $('#autoplay-container').removeClass('true')
-            for (k in KEY_STATUS) {
-              KEY_STATUS[k] = false
-            }
-          }
-          $('#autoplay-status').html(autoplay_is_on ? 'true' : 'false')
+      case 'a': // trigger autoplay
+        if (LOCK_KEYSTROKE) {
+          break
         }
+        set_autoplay(!autoplay_is_on)
         break
 
       case 'b':

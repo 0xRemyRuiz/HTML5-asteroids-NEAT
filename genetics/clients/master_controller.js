@@ -9,11 +9,13 @@ export default (wss, current_game, ws, object) => {
       response += '<li>change <i>"game name"</i></li>'
       response += '</ul>'
       code = 'info'
+
     } else if (object.command === 'change') {
       if (object.subject !== 'xor' && object.subject !== 'asteroids') {
         response = '<p style="margin: 0">Cannot change game to '+object.subject+'</p>'
         response += '<p style="margin: 0">Available games are: "xor", "asteroids"</p>'
         code = 'info'
+
       } else {
         current_game.status = 'game is set'
         current_game.name = object.subject
@@ -28,6 +30,17 @@ export default (wss, current_game, ws, object) => {
         response = 'Game has changed to '+current_game.name
         code = 'info'
       }
+
+    } else if (object.command === 'lock') {
+      wss.clients.forEach((client) => {
+        client.send(JSON.stringify({msg: 'lock'}))
+      })
+
+    } else if (object.command === 'unlock') {
+      wss.clients.forEach((client) => {
+        client.send(JSON.stringify({msg: 'unlock'}))
+      })
+
     } else {
       response = 'ERROR: command not found, type "list" to get the command list'
       code = 'error'
