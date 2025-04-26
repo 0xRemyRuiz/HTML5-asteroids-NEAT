@@ -17,7 +17,7 @@ console.log('Websocket running on port '+PORT)
 
 const current_game = {
   status: 'not initialized',
-  name: 'asteroids',
+  name: null,
   game_order: null,
   client_connected: 0,
   generation_number: 0,
@@ -50,6 +50,8 @@ wss.on('connection', (ws) => {
         ws.is_master = true
       } else if (object.msg === 'game') {
         ws.game = object.game
+        // TODO: hook in new client with the same game id
+        // lock + start new game with next NN in queue
       }
       ws.not_initialized = false
     }

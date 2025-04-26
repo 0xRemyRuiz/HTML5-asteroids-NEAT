@@ -129,12 +129,14 @@ $(function () {
   $watchaispace = $('#watch-ai-space')
 
   // left panel display
-  var playerPanel = false
+  var current_panel = 0
+  var keycodes_show = false
   var renderDangerDirection = 'none'
   var $renderDangerDirection = $("#render-danger-direction")
-  var ennemiesPanel = true
-  var $ennemiesPanelListSel = null
+  var $ennemiesPanelList = null
   var ennemiesList = []
+  var $value_panel = null
+  var $network_panel = null
   function mainLoop() {
     if (!webSocketConnected) {
       autoplay_is_on = false
@@ -221,7 +223,6 @@ $(function () {
           }
         }
 
-        // NOTE: angle logic extracted and deduced from https://www.calculator.net/right-triangle-calculator.html
         // calculate direction degree based on the default game `ship.rot` calculation logic
         danger.dist = minPos.dist
         // c is the length of the visualization vector
@@ -230,77 +231,81 @@ $(function () {
         const d = danger.dist - Math.sqrt((danger.edge + 1) ** 2)
         if (minPos.x < danger.x) {
           if (minPos.y > danger.y) {
-            let alpha = Math.asin(Math.abs(minPos.y - danger.y) / danger.dist)
+            const h = Math.abs(minPos.y - danger.y) / danger.dist
+            const alpha = Math.asin(h)
             danger.dir = 90 - Math.round(alpha * 57.295779513)
             //--
             // DEBUG VISUALIZATION
             //--
               if (renderDangerDirection == 'min') {
-                let a = c * Math.sin(alpha)
-                let b = Math.sqrt(c * c - a * a)
+                const a = c * h
+                const b = Math.sqrt(c * c - a * a)
                 drawLine(ship.x, ship.y, ship.x + b, ship.y - a, 'blue')
               } else if (renderDangerDirection == 'real') {
                 if (minPos.x != ship.rx || minPos.y != ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
-                let a = d * Math.sin(alpha)
-                let b = Math.sqrt(d * d - a * a)
+                const a = d * h
+                const b = Math.sqrt(d * d - a * a)
                 drawLine(minPos.x, minPos.y, minPos.x + b, minPos.y - a, 'red')
               }
           } else {
-            let alpha = Math.asin(Math.abs(minPos.x - danger.x) / danger.dist)
+            const h = Math.abs(minPos.x - danger.x) / danger.dist
+            const alpha = Math.asin(h)
             danger.dir = 180 - Math.round(alpha * 57.295779513)
             //--
             // DEBUG VISUALIZATION
             //--
               if (renderDangerDirection == 'min') {
-                let a = c * Math.sin(alpha)
-                let b = Math.sqrt(c * c - a * a)
+                const a = c * h
+                const b = Math.sqrt(c * c - a * a)
                 drawLine(ship.x, ship.y, ship.x + a, ship.y + b, 'blue')
               } else if (renderDangerDirection == 'real') {
                 if (minPos.x != ship.rx || minPos.y != ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
-                let a = d * Math.sin(alpha)
-                let b = Math.sqrt(d * d - a * a)
+                const a = d * h
+                const b = Math.sqrt(d * d - a * a)
                 drawLine(minPos.x, minPos.y, minPos.x + a, minPos.y + b, 'red')
               }
           }
         } else {
           if (minPos.y < danger.y) {
-            let beta = Math.asin(Math.abs(minPos.y - danger.y) / danger.dist)
+            const h = Math.abs(minPos.y - danger.y) / danger.dist
+            const beta = Math.asin(h)
             danger.dir = 270 - Math.round(beta * 57.295779513)
             //--
             // DEBUG VISUALIZATION
             //--
               if (renderDangerDirection == 'min') {
-                let b = c * Math.sin(beta)
-                let a = Math.sqrt(c * c - b * b)
+                const b = c * h
+                const a = Math.sqrt(c * c - b * b)
                 drawLine(ship.x, ship.y, ship.x - a, ship.y + b, 'blue')
               } else if (renderDangerDirection == 'real') {
                 if (minPos.x != ship.rx || minPos.y != ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
-                let b = d * Math.sin(beta)
-                let a = Math.sqrt(d * d - b * b)
+                const b = d * h
+                const a = Math.sqrt(d * d - b * b)
                 drawLine(minPos.x, minPos.y, minPos.x - a, minPos.y + b, 'red')
               }
           } else {
-            let beta = Math.asin(Math.abs(minPos.x - danger.x) / danger.dist)
+            const h = Math.abs(minPos.x - danger.x) / danger.dist
+            const beta = Math.asin(h)
             danger.dir = 360 - Math.round(beta * 57.295779513)
             //--
             // DEBUG VISUALIZATION
             //--
               if (renderDangerDirection == 'min') {
-                let b = c * Math.sin(beta)
-                let a = Math.sqrt(c * c - b * b)
+                const b = c * h
+                const a = Math.sqrt(c * c - b * b)
                 drawLine(ship.x, ship.y, ship.x - b, ship.y - a, 'blue')
               } else if (renderDangerDirection == 'real') {
                 if (minPos.x != ship.rx || minPos.y != ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
-                let b = d * Math.sin(beta)
-                let a = Math.sqrt(d * d - b * b)
+                const b = d * h
+                const a = Math.sqrt(d * d - b * b)
                 drawLine(minPos.x, minPos.y, minPos.x - b, minPos.y - a, 'red')
               }
           }
@@ -358,11 +363,11 @@ $(function () {
     //--
     // DEBUG DATA VISUALIZATION
     //--
-      if ($ennemiesPanelListSel == null) {
-        $ennemiesPanelListSel = $('#ennemies-list')
+      if ($ennemiesPanelList == null) {
+        $ennemiesPanelList = $('#ennemies-list')
       }
-      $ennemiesPanelListSel.empty()
-      $ennemiesPanelListSel.append(listHTML)
+      $ennemiesPanelList.empty()
+      $ennemiesPanelList.append(listHTML)
 
     Game.FSM.execute();
 
@@ -430,7 +435,6 @@ $(function () {
 
   mainLoop();
 
-  var $value_panel = null
   $(window).keydown(function (e) {
     switch (KEY_CODES[e.keyCode]) {
       case 'f': // show framerate
@@ -457,7 +461,7 @@ $(function () {
         }
         break
 
-      case 'n':
+      case 't': // toggle info panel
         if ($value_panel == null) {
           $value_panel = $("#value-panel")
         }
@@ -487,17 +491,29 @@ $(function () {
         set_autoplay(!autoplay_is_on)
         break
 
-      case 'b':
-        if (!playerPanel) {
-          ennemiesPanel = false
-          playerPanel = true
+      case 'b': // switch subview
+        if (current_panel === 0) {
           $('#ennemies-list-panel').hide()
           $('#player-stats-panel').show()
-        } else {
-          ennemiesPanel = true
-          playerPanel = false
+          current_panel = 1
+        } else if (current_panel === 1) {
           $('#player-stats-panel').hide()
+          $('#network-panel').show()
+          show_network_canva()
+          current_panel = 2
+        } else {
+          $('#network-panel').hide()
           $('#ennemies-list-panel').show()
+          current_panel = 0
+        }
+        break
+
+      case 'k': // toggle Keycodes listing
+        keycodes_show = !keycodes_show
+        if (keycodes_show) {
+          $('#keycodes').show()
+        } else {
+          $('#keycodes').hide()
         }
         break
 

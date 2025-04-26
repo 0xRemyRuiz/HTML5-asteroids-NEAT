@@ -77,6 +77,10 @@ export class Network {
     this.connections = connections
   }
 
+  get_phenotype() {
+    return { specie, nodes, connections, layers }
+  }
+
   get_random_connection() {
     return this.connections[Math.floor(Math.random() * this.connections.length)]
   }

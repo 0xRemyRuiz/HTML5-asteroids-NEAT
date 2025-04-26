@@ -69,7 +69,7 @@
             // this.Ctx.lineTo(this.XC(0) + 5, this.YC(i * this.YTickDelta))
             this.Ctx.moveTo(0, this.YC(i * this.YTickDelta))
             this.Ctx.lineTo(this.$el.width, this.YC(i * this.YTickDelta))
-            this.Ctx.stroke()  
+            this.Ctx.stroke()
           }
 
           // X tick marks
@@ -79,7 +79,7 @@
             // this.Ctx.lineTo(this.XC(i * this.XTickDelta), this.YC(0) + 5)
             this.Ctx.moveTo(this.XC(i * this.XTickDelta), 0)
             this.Ctx.lineTo(this.XC(i * this.XTickDelta), this.$el.height)
-            this.Ctx.stroke()  
+            this.Ctx.stroke()
           }
 
           this.Ctx.lineWidth = 2
