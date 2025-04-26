@@ -1,4 +1,5 @@
 
+NETWORK_PANEL_SHOWN = false
 
 var $network_canva = null
 var $nc_context = null
@@ -22,6 +23,7 @@ var test_data = {
     {from: 0, to: 3, innov: 1, enabled: true, weight: 1.1},
     {from: 3, to: 6, innov: 1, enabled: true, weight: 1.5},
     {from: 2, to: 6, innov: 3, enabled: false, weight: 0.2},
+    {from: 4, to: 0, innov: 3, enabled: false, weight: 0.2},
   ],
   layers: [
     [0, 1, 2],
@@ -35,7 +37,7 @@ var network = test_data
 
 const c = 7
 
-function draw_node(ctx, node, color = 'black') {
+function draw_node(ctx, node, color = 'grey') {
   const strokeStyle = ctx.strokeStyle
   const lineWidth = ctx.lineWidth
   const fillStyle = ctx.fillStyle
@@ -75,21 +77,53 @@ function draw_link(ctx, nodes, connection) {
   ctx.lineWidth = lineWidth
 }
 
-const show_network_canva = () => {
+function draw_text_link(ctx, nodes, connection) {
+  let xSup = false
+  let ySup = false
+
+  const middle = {}
+  if (nodes[connection.from].x < nodes[connection.to].x) {
+    middle.x = nodes[connection.from].x + (nodes[connection.to].x - nodes[connection.from].x) / 2
+  } else {
+    xSup = true
+    middle.x = nodes[connection.to].x + (nodes[connection.from].x - nodes[connection.to].x) / 2
+  }
+  if (nodes[connection.from].y < nodes[connection.to].y) {
+    middle.y = nodes[connection.from].y + (nodes[connection.to].y - nodes[connection.from].y) / 2
+  } else {
+    ySup = true
+    middle.y = nodes[connection.to].y + (nodes[connection.from].y - nodes[connection.to].y) / 2
+  }
+
+  if ((!xSup && !ySup) || (xSup && ySup)) {
+    ctx.fillText(connection.weight, middle.x, middle.y)
+    ctx.fillText('i:'+connection.innov, middle.x - 10, middle.y + 10)
+  } else {
+    ctx.fillText(connection.weight, middle.x, middle.y + 10)
+    ctx.fillText('i:'+connection.innov, middle.x - 10, middle.y)
+  }
+}
+
+const resize_network_canva = () => {
+  if (!NETWORK_PANEL_SHOWN) {
+    return
+  }
+ 
   if ($network_canva === null) {
     $network_canva = $('#network-visualization')[0]
     $nc_context = $network_canva.getContext('2d')
   }
 
   $network_canva.width = $(window).width() - $("#canvas").width() - 20
-  $network_canva.height = 300
+  const margin = $network_canva.width / 10 // 10% margin
+  $network_canva.height = $("#canvas").height() - $network_canva.offsetTop - 20
 
-  const xSpace = $network_canva.width / (network.layers.length + 1)
+  const xSpace = $network_canva.width / (network.layers.length - 1) - margin
 
   for (let i = 0; i < network.layers.length; i++) {
     let ySpace = $network_canva.height / (network.layers[i].length + 1)
     for (let j = 0; j < network.layers[i].length; j++) {
-      network.nodes[network.layers[i][j]].x = xSpace * (i + 1)
+      network.nodes[network.layers[i][j]].x = xSpace * i + margin
       network.nodes[network.layers[i][j]].y = ySpace * (j + 1)
     }
   }
@@ -104,6 +138,11 @@ const show_network_canva = () => {
     for (let j = 0; j < network.layers[i].length; j++) {
       draw_node($nc_context, network.nodes[network.layers[i][j]])
     }
+  }
+
+  // write text link after everything so it is on top
+  for (let i = 0; i < network.connections.length; i++) {
+    draw_text_link($nc_context, network.nodes, network.connections[i])
   }
 }
 

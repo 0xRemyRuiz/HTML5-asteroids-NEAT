@@ -45,11 +45,10 @@ $(window)
   }
 })
 .keyup(function (e) {
-  if (handle_strokes(e)) {
-    KEY_STATUS.keyDown = false
-    if (KEY_CODES[e.keyCode]) {
-      e.preventDefault()
-      KEY_STATUS[KEY_CODES[e.keyCode]] = false
-    }
+  resize_network_canva()
+  KEY_STATUS.keyDown = false
+  if (KEY_CODES[e.keyCode]) {
+    e.preventDefault()
+    KEY_STATUS[KEY_CODES[e.keyCode]] = false
   }
 })

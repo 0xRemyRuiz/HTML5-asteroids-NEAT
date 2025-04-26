@@ -499,10 +499,12 @@ $(function () {
         } else if (current_panel === 1) {
           $('#player-stats-panel').hide()
           $('#network-panel').show()
-          show_network_canva()
+          NETWORK_PANEL_SHOWN = true
+          resize_network_canva()
           current_panel = 2
         } else {
           $('#network-panel').hide()
+          NETWORK_PANEL_SHOWN = false
           $('#ennemies-list-panel').show()
           current_panel = 0
         }
