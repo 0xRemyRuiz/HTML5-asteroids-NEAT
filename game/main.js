@@ -129,13 +129,14 @@ $(function () {
   $watchaispace = $('#watch-ai-space')
 
   // left panel display
-  var current_panel = 0
+  var current_panel = 2
   var keycodes_show = false
   var renderDangerDirection = 'none'
   var $renderDangerDirection = $("#render-danger-direction")
   var $ennemiesPanelList = null
   var ennemiesList = []
   var $value_panel = null
+  var value_panel_on = false
   var $network_panel = null
   function mainLoop() {
     if (!webSocketConnected) {
@@ -163,19 +164,18 @@ $(function () {
     if (LAST_AI_BUTTON_COMMAND.space && !$watchaispace.hasClass('active')) $watchaispace.addClass('active')
     else if (!LAST_AI_BUTTON_COMMAND.space && $watchaispace.hasClass('active')) !$watchaispace.removeClass('active')
 
-    //--
-    // DEBUG DATA VISUALIZATION
-    //--
+    ship.rx = Math.round(ship.x)
+    ship.ry = Math.round(ship.y)
+
+    if (current_panel === 0) {
+      // DEBUG DATA VISUALIZATION
       $('#player_score').html(Game.score)
       $('#player_health').html(Game.lives)
       $('#player_speed_x').html(Math.round(ship.vel.x * 1e8) / 1e8)
       $('#player_speed_y').html(Math.round(ship.vel.y * 1e8) / 1e8)
       $('#player_orientation').html(Math.round(ship.rot)+"°")
-      ship.rx = Math.round(ship.x)
-      ship.ry = Math.round(ship.y)
       $('#player_position').html(ship.rx+"x / "+ship.ry+"y")
-
-      // console.log(Game.sprites)
+    }
 
     let listHTML = ""
     let dangerList = []
@@ -237,12 +237,12 @@ $(function () {
             //--
             // DEBUG VISUALIZATION
             //--
-              if (renderDangerDirection == 'min') {
+              if (renderDangerDirection === 'min') {
                 const a = c * h
                 const b = Math.sqrt(c * c - a * a)
                 drawLine(ship.x, ship.y, ship.x + b, ship.y - a, 'blue')
-              } else if (renderDangerDirection == 'real') {
-                if (minPos.x != ship.rx || minPos.y != ship.ry) {
+              } else if (renderDangerDirection === 'real') {
+                if (minPos.x !== ship.rx || minPos.y !== ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
                 const a = d * h
@@ -256,12 +256,12 @@ $(function () {
             //--
             // DEBUG VISUALIZATION
             //--
-              if (renderDangerDirection == 'min') {
+              if (renderDangerDirection === 'min') {
                 const a = c * h
                 const b = Math.sqrt(c * c - a * a)
                 drawLine(ship.x, ship.y, ship.x + a, ship.y + b, 'blue')
-              } else if (renderDangerDirection == 'real') {
-                if (minPos.x != ship.rx || minPos.y != ship.ry) {
+              } else if (renderDangerDirection === 'real') {
+                if (minPos.x !== ship.rx || minPos.y !== ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
                 const a = d * h
@@ -277,12 +277,12 @@ $(function () {
             //--
             // DEBUG VISUALIZATION
             //--
-              if (renderDangerDirection == 'min') {
+              if (renderDangerDirection === 'min') {
                 const b = c * h
                 const a = Math.sqrt(c * c - b * b)
                 drawLine(ship.x, ship.y, ship.x - a, ship.y + b, 'blue')
-              } else if (renderDangerDirection == 'real') {
-                if (minPos.x != ship.rx || minPos.y != ship.ry) {
+              } else if (renderDangerDirection === 'real') {
+                if (minPos.x !== ship.rx || minPos.y !== ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
                 const b = d * h
@@ -296,12 +296,12 @@ $(function () {
             //--
             // DEBUG VISUALIZATION
             //--
-              if (renderDangerDirection == 'min') {
+              if (renderDangerDirection === 'min') {
                 const b = c * h
                 const a = Math.sqrt(c * c - b * b)
                 drawLine(ship.x, ship.y, ship.x - b, ship.y - a, 'blue')
-              } else if (renderDangerDirection == 'real') {
-                if (minPos.x != ship.rx || minPos.y != ship.ry) {
+              } else if (renderDangerDirection === 'real') {
+                if (minPos.x !== ship.rx || minPos.y !== ship.ry) {
                   drawLine(ship.x, ship.y, minPos.dangerX, minPos.dangerY, 'red')
                 }
                 const b = d * h
@@ -320,10 +320,13 @@ $(function () {
         }
         return 1
       })
-      //-- DEBUG VISUALIZATION
-      listHTML = ''
-      for (let k in dangerList) {
-        listHTML += `<li>${dangerList[k].name} ${dangerList[k].x}x / ${dangerList[k].y}y => ${dangerList[k].dist} dist ${dangerList[k].dir}°</li>`
+
+      if (current_panel === 2) {
+        //-- DEBUG VISUALIZATION
+        listHTML = ''
+        for (let k in dangerList) {
+          listHTML += `<li>${dangerList[k].name} ${dangerList[k].x}x / ${dangerList[k].y}y => ${dangerList[k].dist} dist ${dangerList[k].dir}°</li>`
+        }
       }
     }
 
@@ -465,10 +468,11 @@ $(function () {
         if ($value_panel == null) {
           $value_panel = $("#value-panel")
         }
-        if ($value_panel.css('visibility') == 'hidden') {
-          $value_panel.css('visibility', 'visible')
+        value_panel_on = !value_panel_on
+        if (value_panel_on) {
+          $value_panel.show()
         } else {
-          $value_panel.css('visibility', 'hidden')
+          $value_panel.hide()
         }
         break
 
@@ -485,6 +489,8 @@ $(function () {
         break;
 
       case 'a': // trigger autoplay
+        // TODO: parametrize to allow test mode
+        return // deactivated
         if (LOCK_KEYSTROKE) {
           break
         }
@@ -492,22 +498,28 @@ $(function () {
         break
 
       case 'b': // switch subview
-        if (current_panel === 0) {
-          $('#ennemies-list-panel').hide()
-          $('#player-stats-panel').show()
-          current_panel = 1
-        } else if (current_panel === 1) {
-          $('#player-stats-panel').hide()
-          $('#network-panel').show()
-          NETWORK_PANEL_SHOWN = true
-          resize_network_canva()
-          current_panel = 2
-        } else {
-          $('#network-panel').hide()
-          NETWORK_PANEL_SHOWN = false
-          $('#ennemies-list-panel').show()
-          current_panel = 0
-        }
+        panels = [
+          () => {
+            // player stats panel
+            $('#ennemies-list-panel').hide()
+            $('#player-stats-panel').show()
+          },
+          () => {
+            // network graphic representation
+            $('#player-stats-panel').hide()
+            $('#network-panel').show()
+            NETWORK_PANEL_SHOWN = true
+            resize_network_canva()
+          },
+          () => {
+            // danger realtime listing
+            $('#network-panel').hide()
+            NETWORK_PANEL_SHOWN = false
+            $('#ennemies-list-panel').show()
+          },
+        ]
+        current_panel = (current_panel + 1) % panels.length
+        panels[current_panel]()
         break
 
       case 'k': // toggle Keycodes listing

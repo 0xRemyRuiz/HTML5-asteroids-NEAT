@@ -182,4 +182,8 @@ const activation = {
 }
 
 
-
+try {
+export default () => {
+  return
+}
+} catch (e) {}

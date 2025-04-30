@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="text/javascript" src="libs/jquery-3.7.1.min.js"></script>
+  <style type="text/css">
+    #no-websocket { color: orange }
+  </style>
+  <title>XOR test game</title>
+</head>
+<body>
+  <button id="no-websocket" onclick="addWebSocketListeners()">Connect to websocket</button>
+  <h3>XOR Results</h3>
+  <ul id="xor-results"></ul>
+  <h3>Network visualization</h3>
+  <canvas id="network-visualization"></canvas>
+  <script type="text/javascript" src="commons/controls.js"></script>
+  <script type="text/javascript" src="commons/network_visual.js"></script>
+  <script type="text/javascript">
+    WEBSOCKET_PORT = 3000
+    var webSocketConnected = false, webSocketInstance = null, neural_network = null, $xor_results = null
+
+    let current_game = null, current_phenotype = null
+    // XOR rounds with expected result
+    const game_rounds = [
+      [[0, 0], 0],
+      [[0, 1], 1],
+      [[1, 0], 1],
+      [[1, 1], 0],
+    ]
+    let results = []
+    const game = {
+      on: false,
+      round: 0,
+      results: [],
+      inputs: null,
+    }
+
+    const onopen = () => {
+      if ($xor_results === null) {
+        $xor_results = $('#xor-results')
+      }
+      NETWORK_PANEL_SHOWN = true
+      webSocketConnected = true
+      $('#no-websocket').hide()
+    }
+
+    const onmessage = (event) => {
+      try {
+        const parsedData = JSON.parse(event.data)
+
+        console.log(new Date(), 'Received data on message', parsedData)
+
+        if (parsedData.msg === 'who are you' || parsedData.msg === 'game change' || parsedData.game === 'start') {
+          if (parsedData.subject) {
+            current_game = parsedData.subject
+          }
+          webSocketInstance.send(JSON.stringify({ msg: 'game', game: 'xor' }))
+
+        } else if (parsedData.msg === 'restart' && parsedData.phenotype) {
+          console.log('Received restart', current_game, parsedData)
+          if (current_game !== 'xor' && parsedData.game !== 'xor') {
+            return
+          }
+          NETWORK_PANEL_SHOWN = true
+          current_game = parsedData.game
+          current_phenotype = parsedData.phenotype
+          resize_network_canva(parsedData.phenotype)
+
+          game.on = true
+          game.results = []
+          game.round = 0
+          $xor_results.html('')
+          // webSocketInstance.send(JSON.stringify({ status: 'started' }))
+
+        }
+
+        if (game.on) {
+          console.log('Game on round', game.round, '/', game_rounds.length, 'Result:', parseInt(parsedData.result))
+          const result = parseInt(parsedData.result)
+          // getting the result for the round
+          if (!isNaN(result)) {
+            game.results[game.round - 1] = result
+            const result_li = `<li>inputs: ${game_rounds[game.round - 1][0]} result: ${game.results[game.round - 1]}</li>`
+            $xor_results.html($xor_results.html()+result_li)
+          }
+
+          if (game.round >= game_rounds.length) {
+            game.on = false
+            let fitness = 0
+            console.log(game.results, game.results.length)
+            for (var i = 0; i < game.results.length; i++) {
+              fitness += game.results[i] === game_rounds[i][1]
+            }
+            console.log('Game ended with fitness=', fitness)
+            $xor_results.html($xor_results.html()+'<li>Game ended waiting for a new game...</li>')
+            setTimeout(() => {
+              webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
+            }, 5e1)
+          } else {
+            game.inputs = game_rounds[game.round]
+            webSocketInstance.send(JSON.stringify({ status: 'round check', inputs: game.inputs }))
+          }
+
+          game.round++
+        }
+
+      } catch(e) {}
+    }
+
+    const removeWebSocketListeners = () => {
+      $('#no-websocket').show()
+      webSocketConnected = false
+      webSocketInstance.removeEventListener('open', onopen)
+      webSocketInstance.removeEventListener('message', onmessage)
+      webSocketInstance.removeEventListener('error', removeWebSocketListeners)
+      webSocketInstance.removeEventListener('close', removeWebSocketListeners)
+      webSocketInstance = null
+    }
+
+    const addWebSocketListeners = () => {
+      if (webSocketInstance !== null) return
+      const url = 'ws://localhost:'+WEBSOCKET_PORT
+      console.log('trying to connect to websocket: '+url)
+      webSocketInstance = new WebSocket(url)
+      webSocketInstance.addEventListener('open', onopen)
+      webSocketInstance.addEventListener('message', onmessage)
+      webSocketInstance.addEventListener('error', removeWebSocketListeners)
+      webSocketInstance.addEventListener('close', removeWebSocketListeners)
+    }
+
+    $(window).keydown(function (e) {
+      switch (KEY_CODES[e.keyCode]) {
+      }
+    })
+  </script>
+</body>
+</html>

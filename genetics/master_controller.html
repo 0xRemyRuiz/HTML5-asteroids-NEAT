@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script type="text/javascript" src="../../libs/jquery-3.7.1.min.js"></script>
+  <script type="text/javascript" src="../libs/jquery-3.7.1.min.js"></script>
   <style type="text/css">
     #command-holder { margin: 5px 0; display: none }
     #command-holder input { width: 75px }
@@ -106,6 +106,7 @@
             $response.html(parsedData.response)
           } else {
             $('#status').html(parsedData.status)
+            console.log(parsedData, parsedData.best_fitness_score)
             if (parsedData.name) {
               $game_name.html(parsedData.name)
               $client_number.html(parsedData.client_connected)

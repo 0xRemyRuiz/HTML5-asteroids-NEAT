@@ -1,4 +1,4 @@
-import Network, Node, Connection from './network'
+import {Network, Node, Connection} from './network'
 
 export class Population {
   id = 0
@@ -25,6 +25,7 @@ export class Population {
   }
 
   add_connection(connection) {
+    const new_connection = new Connection()
     if (this.connections[connection.get_id()] !== undefined) {
       return false
     }

@@ -15,7 +15,12 @@ To run the NEAT algorithm for training and autoplay first install the node handl
 Then either use `npm run start` or `npm run start [port]`.
 Base port is 3000 but if you already have a service running on that port you can specify another one.
 In the case you want to change the port without specifying in the command, change the config value `WEBSOCKET_PORT` in `game/config.js`.
-Remember to do the same in every html clients (such as `game/config.js` file or in the `genetics/debug_views/master_controller.html`).
+Remember to do the same in every html clients (such as `game/config.js` file or in the `genetics/master_controller.html`).
+
+RUN other games
+---------------
+
+To run learning mode on other games, you just need to a client in `genetics/clients` and add it to the list in `index.js`. It needs to follow the same structure as the other examples. A XOR simple test game is available at `xor_test_game.html`. From the master controller point of view, you just need to execute `change xor` command then `init` to (re)initialize and then `run` to finally run the learning process.
 
 NOTES
 -----

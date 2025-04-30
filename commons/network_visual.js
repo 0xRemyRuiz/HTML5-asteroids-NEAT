@@ -1,8 +1,10 @@
 
 NETWORK_PANEL_SHOWN = false
 
+var network_phenotype = null
 var $network_canva = null
 var $nc_context = null
+let network_viz_test_mode = false
 var test_data = {
   specie: 'aba',
   nodes: {
@@ -31,9 +33,6 @@ var test_data = {
     [3, 4],
   ],
 }
-
-// test values
-var network = test_data
 
 const c = 7
 
@@ -104,45 +103,77 @@ function draw_text_link(ctx, nodes, connection) {
   }
 }
 
-const resize_network_canva = () => {
+const resize_network_canva = (network = null) => {
+  if (network) {
+    network_phenotype = network
+  } else if (network_phenotype === null) {
+    network_phenotype = test_data
+    network_viz_test_mode = true
+  }
+
   if (!NETWORK_PANEL_SHOWN) {
     return
   }
- 
+
   if ($network_canva === null) {
     $network_canva = $('#network-visualization')[0]
     $nc_context = $network_canva.getContext('2d')
   }
 
-  $network_canva.width = $(window).width() - $("#canvas").width() - 20
+  if ($("#canvas")[0]) {
+    $network_canva.width = $(window).width() - $("#canvas").width() - 20
+    $network_canva.height = $("#canvas").height() - $network_canva.offsetTop - 20
+  } else {
+    $network_canva.width = $(window).width() - 20
+    $network_canva.height = $(window).height() - $network_canva.offsetTop - 20    
+  }
+
+  // TODO: maybe replace this with an actual count of minimal size given maximum length of a layer
+  if ($network_canva.height <= 100) {
+    $network_canva.height = 100
+  }
+
   const margin = $network_canva.width / 10 // 10% margin
-  $network_canva.height = $("#canvas").height() - $network_canva.offsetTop - 20
+  const xSpace = $network_canva.width / (network_phenotype.layers.length - 1) - margin
 
-  const xSpace = $network_canva.width / (network.layers.length - 1) - margin
-
-  for (let i = 0; i < network.layers.length; i++) {
-    let ySpace = $network_canva.height / (network.layers[i].length + 1)
-    for (let j = 0; j < network.layers[i].length; j++) {
-      network.nodes[network.layers[i][j]].x = xSpace * i + margin
-      network.nodes[network.layers[i][j]].y = ySpace * (j + 1)
+  for (let i = 0; i < network_phenotype.layers.length; i++) {
+    let ySpace = $network_canva.height / (network_phenotype.layers[i].length + 1)
+    for (let j = 0; j < network_phenotype.layers[i].length; j++) {
+      network_phenotype.nodes[network_phenotype.layers[i][j]].x = xSpace * i + margin
+      network_phenotype.nodes[network_phenotype.layers[i][j]].y = ySpace * (j + 1)
     }
   }
 
-  for (let i = 0; i < network.connections.length; i++) {
-    draw_link($nc_context, network.nodes, network.connections[i])
+  if (network_viz_test_mode) {
+    const font = $nc_context.font
+    const style = $nc_context.fillStyle
+    const align = $nc_context.textAlign
+
+    $nc_context.fillStyle = 'grey'
+    $nc_context.textAlign = 'center'
+    $nc_context.font = '50px arial'
+    $nc_context.fillText('TEST MODE', $network_canva.width / 2, $network_canva.height / 2 + 25)
+
+    $nc_context.font = font
+    $nc_context.fillStyle = style
+    $nc_context.textAlign = align
+  }
+
+  for (let i = 0; i < network_phenotype.connections.length; i++) {
+    draw_link($nc_context, network_phenotype.nodes, network_phenotype.connections[i])
   }
 
   // draw node after so text overlap connections
-  for (let i = 0; i < network.layers.length; i++) {
-    let ySpace = $network_canva.height / (network.layers[i].length + 1)
-    for (let j = 0; j < network.layers[i].length; j++) {
-      draw_node($nc_context, network.nodes[network.layers[i][j]])
+  for (let i = 0; i < network_phenotype.layers.length; i++) {
+    let ySpace = $network_canva.height / (network_phenotype.layers[i].length + 1)
+    for (let j = 0; j < network_phenotype.layers[i].length; j++) {
+      draw_node($nc_context, network_phenotype.nodes[network_phenotype.layers[i][j]])
     }
   }
 
   // write text link after everything so it is on top
-  for (let i = 0; i < network.connections.length; i++) {
-    draw_text_link($nc_context, network.nodes, network.connections[i])
+  for (let i = 0; i < network_phenotype.connections.length; i++) {
+    draw_text_link($nc_context, network_phenotype.nodes, network_phenotype.connections[i])
   }
 }
 

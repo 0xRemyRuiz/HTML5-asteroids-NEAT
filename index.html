@@ -13,8 +13,9 @@
       body { margin: 0; padding: 0 }
       html > body .no-space { margin: 0 !important; padding: 0 !important }
       html > body .no-vertical-space { margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important }
-      #value-panel { visibility: hidden }
+      #value-panel { display: none }
       #game-container { padding: 0; width: 100vw; height: 1000px; display: inline-block }
+      #no-websocket { color: orange; font-style: bold }
       #canvas { border:1px solid black; top:0px; left:0px }
 
       #panel-holder { vertical-align: top; display: inline-block }
@@ -45,10 +46,9 @@
   </head>
   <body>
     <div id="game-container">
-      <!-- <canvas id="canvas"></canvas> -->
       <canvas id="canvas" width="800" height="600"></canvas>
       <div id="panel-holder">
-        <button id="no-websocket" style="color: orange; font-style: bold" onclick="addWebSocketListeners()">WARNING: Websocket not connected (click to connect)</button>
+        <button id="no-websocket" onclick="addWebSocketListeners()">WARNING: Websocket not connected (click to connect)</button>
         <div class="watch-controls-holder">
           <div style="vertical-align: bottom;">AI ORDER:</div>
           <div id="watch-ai-left" class="left ai button">←</div>
@@ -57,26 +57,27 @@
           <div id="watch-ai-space" class="space ai button">space</div>
         </div>
         <div class="watch-controls-holder">
+          <span id="lock_is_on">(🔒autoplay on)</span>
           <div style="vertical-align: bottom;">INPUTS:</div>
           <div id="watch-left" class="left button">←</div>
           <div id="watch-up" class="up button">↑</div>
           <div id="watch-right" class="right button">→</div>
           <div id="watch-space" class="space button">space</div>
         </div>
-        <div>Press 't' to toggle panel ; 'k' for key list<span id="lock_is_on"> (moves 🔒)</span></div>
-        <!-- TODO: add a player move visual watcher -->
+        <div>Press 'k' to toggle key list</div>
+        <div id="keycodes">
+          <h3 class="no-space">Keycodes list</h3>
+          <ul class="no-vertical-space">
+            <li>f : show frames</li>
+            <li>u : reset current game</li>
+            <li>p : pause current game</li>
+            <li>d : render danger detection (current = <span id="render-danger-direction">none</span>)</li>
+            <!-- <li id="autoplay-container">a : switch autoplay (current = <span id="autoplay-status">false</span>)</li> -->
+            <li>m : mute SFX (current = <span id="SFX-muted">true</span>)</li>
+          </ul>
+        </div>
+        <div>Press 't' to toggle panel</div>
         <div id="value-panel">
-          <div id="keycodes">
-            <h3 class="no-space">Keycodes list</h3>
-            <ul class="no-vertical-space">
-              <li>f : show frames</li>
-              <li>u : reset current game</li>
-              <li>p : pause current game</li>
-              <li>d : render danger detection (current = <span id="render-danger-direction">none</span>)</li>
-              <li id="autoplay-container">a : switch autoplay (current = <span id="autoplay-status">false</span>)</li>
-              <li>m : mute SFX (current = <span id="SFX-muted">true</span>)</li>
-            </ul>
-          </div>
           <div id="ennemies-list-panel">
             <h3 class="no-vertical-space">Ennemies list (unordered) <span>('b' to switch panel)</span></h3>
             <ul class="no-vertical-space" id="ennemies-list"></ul>
@@ -104,15 +105,15 @@
         <div id="space" class='button'>FIRE</div>
       </div>
     </div>
+    <script type="text/javascript" src="commons/controls.js"></script>
+    <script type="text/javascript" src="commons/network_visual.js"></script>
     <script type="text/javascript" src="game/config.js"></script>
     <script type="text/javascript" src="game/ipad.js"></script>
-    <script type="text/javascript" src="game/controls.js"></script>
-    <script type="text/javascript" src="game/game-objects.js"></script>
+    <script type="text/javascript" src="game/autoplay.js"></script>
+    <script type="text/javascript" src="game/game_objects.js"></script>
     <script type="text/javascript" src="game/text.js"></script>
     <script type="text/javascript" src="game/audio.js"></script>
-    <script type="text/javascript" src="game/autoplay.js"></script>
     <script type="text/javascript" src="game/game.js"></script>
-    <script type="text/javascript" src="game/network_visual.js"></script>
     <script type="text/javascript" src="game/main.js"></script>
   </body>
 </html>

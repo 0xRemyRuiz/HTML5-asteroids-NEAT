@@ -82,8 +82,8 @@ const onmessage = (event) => {
       wrong_game_warning = true
 
       // TODO: change this
-      if (parsedData.msg == 'restart') {
-        if (Game.FSM.state == 'waiting') {
+      if (parsedData.msg === 'restart') {
+        if (Game.FSM.state === 'waiting') {
           Game.FSM.state = 'start'
         } else {
           Game.FSM.start()

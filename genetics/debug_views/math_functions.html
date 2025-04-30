@@ -7,8 +7,89 @@
   </head>
   <body>
     <h1>Activation function list and draw</h1>
-    <script type="text/javascript" src="../neat/neat.js"></script>
     <script type="text/javascript">
+      /**
+       * 
+       * Activation functions
+       * 
+       **/
+      // Partially derived from neat python documentation
+      // cf. https://neat-python.readthedocs.io/en/latest/activation.html
+      // Also base verification from https://en.wikipedia.org/wiki/Activation_function
+      const activation = {
+        'ident': function(x) {
+          return x
+        },
+        'abs': function(x) {
+          return Math.abs(x)
+        },
+        'square': function(x) {
+          return x * x
+        },
+        'cube': function(x) {
+          return x * x * x
+        },
+        'hat': function(x) {
+          return Math.max(1 - Math.abs(x), 0)
+        },
+        'gauss': function(x) {
+          return Math.exp(-(x * x))
+        },
+        'relu': function(x) {
+          if (x <= 0) return 0
+          return x
+        },
+        'lrelu': function(x) {
+          const alpha = 0.1
+          if (x <= 0) return alpha * x
+          return x
+        },
+        'elu': function(x) {
+          if (x > 0) return x
+          return Math.exp(x) - 1
+        },
+        // cf. https://github.com/pytorch/pytorch/blob/96aaa311c0251d24decb9dc5da4957b7c590af6f/torch/nn/modules/activation.py#L422
+        'selu': function(x) {
+          if (x > 0) return x
+          const alpha = 1.6732632423543772848170429916717
+          const scale = 1.0507009873554804934193349852946
+          return alpha * scale * (Math.exp(x) - 1)
+        },
+        'silu': function(x) {
+          return x / (1 + Math.exp(-x))
+        },
+        'elish': function(x) {
+          if (x < 0) return (Math.exp(x) - 1) / (1 + Math.exp(-x))
+          return x / (1 + Math.exp(-x))
+        },
+        'exp': function(x) {
+          return Math.exp(x)
+        },
+        'softplus': function(x) {
+          return Math.log(1 + Math.exp(x))
+        },
+        'sin': function(x) {
+          return Math.sin(x)
+        },
+        'invers': function(x) {
+          return 1 / x
+        },
+        'log': function(x) {
+          return Math.log(x)
+        },
+        'clamp': function(x) {
+          if (x > 1.0) return 1.0
+          if (x < -1.0) return -1.0
+          return x 
+        },
+        'tanh': function(x) {
+          return (Math.exp(x) - Math.exp(-x)) / (Math.exp(x) + Math.exp(-x))
+        },
+        'sigmoid': function(x) {
+          return 1 / (1 + Math.exp(-x))
+        },
+      }
+
       $body = document.getElementsByTagName("body")[0]
 
       class MathFunctionCanva {

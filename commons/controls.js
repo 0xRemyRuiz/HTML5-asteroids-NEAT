@@ -1,5 +1,6 @@
 
 LOCK_KEYSTROKE = false
+autoplay_is_on = true
 
 KEY_CODES = {
   32: 'space',
