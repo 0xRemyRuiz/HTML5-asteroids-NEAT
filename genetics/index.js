@@ -65,10 +65,14 @@ wss.on('connection', (ws) => {
         ws.not_initialized = false
       }
 
-      if (!ws.is_master && object.msg === 'game' && ws.game !== null && ws.game === current_game.name) {
-        ws.id = current_game.ccid
-        current_game.ccid++
-        current_game.client_connected++
+      if (!ws.is_master && object.msg === 'game') {
+        if (ws.game !== null && ws.game === current_game.name) {
+          ws.id = current_game.ccid
+          current_game.ccid++
+          current_game.client_connected++
+        } else {
+          ws.id = -1
+        }
       }
 
       //

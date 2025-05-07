@@ -46,17 +46,20 @@
       const $commander = $('#commander')
       if ($commander.val()) {
         if (webSocketConnected) {
+
           const idx = $commander.val().indexOf(' ')
           if (idx != -1) {
             command_to_send = {
               command: $commander.val().substring(0, idx),
               subject: $commander.val().substring(idx + 1),
             }
+
           } else {
             command_to_send = {
               command: $commander.val(),
             }
           }
+
         } else {
           $('#response').style.backgroundColor = 'red'
           $('#response').html('Error: websocket not connected')
@@ -89,24 +92,29 @@
 
     const onmessage = (event) => {
       try {
+
         const parsedData = JSON.parse(event.data)
         if (parsedData.msg === 'who are you') {
           webSocketInstance.send(JSON.stringify({ msg: 'master' }))
           return
+
         } else {
           if (parsedData.response) {
             const $response = $('#response')
             if (parsedData.code === 'error') {
               $response.css('color', 'red')
+
             } else if (parsedData.code === 'warning') {
               $response.css('color', 'orange')
+
             } else {
               $response.css('color', 'blue')
             }
+
             $response.html(parsedData.response)
+
           } else {
             $('#status').html(parsedData.status)
-            console.log(parsedData, parsedData.best_fitness_score)
             if (parsedData.name) {
               $game_name.html(parsedData.name)
               $client_number.html(parsedData.client_connected)
@@ -117,13 +125,16 @@
             }
           }
         }
+
         // asking new data in continuous flow
         if (command_to_send !== null) {
           webSocketInstance.send(JSON.stringify(command_to_send))
           command_to_send = null
+
         } else {
           webSocketInstance.send(JSON.stringify({}))
         }
+
       } catch(e) {}
     }
 

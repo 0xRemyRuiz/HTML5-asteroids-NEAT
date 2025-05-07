@@ -6,13 +6,14 @@
   <script type="text/javascript" src="libs/jquery-3.7.1.min.js"></script>
   <style type="text/css">
     #no-websocket { color: orange }
+    #xor-results { margin: 5px 0 }
+    h3 { margin: 2px 0 }
   </style>
   <title>XOR test game</title>
 </head>
 <body>
   <button id="no-websocket" onclick="addWebSocketListeners()">Connect to websocket</button>
-  <h3>XOR Results</h3>
-  <ul id="xor-results"></ul>
+  <div id="xor-results">Results: </div>
   <h3>Network visualization</h3>
   <canvas id="network-visualization"></canvas>
   <script type="text/javascript" src="commons/controls.js"></script>
@@ -50,9 +51,7 @@
       try {
         const parsedData = JSON.parse(event.data)
 
-        console.log(new Date(), 'Received data on message', parsedData)
-
-        if (parsedData.msg === 'who are you' || parsedData.msg === 'game change' || parsedData.game === 'start') {
+        if (parsedData.msg === 'who are you' || parsedData.msg === 'game change' || parsedData.msg === 'start') {
           if (parsedData.subject) {
             current_game = parsedData.subject
           }
@@ -71,33 +70,32 @@
           game.on = true
           game.results = []
           game.round = 0
-          $xor_results.html('')
+          $xor_results.html('Results: ')
           // webSocketInstance.send(JSON.stringify({ status: 'started' }))
 
         }
 
         if (game.on) {
-          console.log('Game on round', game.round, '/', game_rounds.length, 'Result:', parseInt(parsedData.result))
           const result = parseInt(parsedData.result)
           // getting the result for the round
           if (!isNaN(result)) {
             game.results[game.round - 1] = result
-            const result_li = `<li>inputs: ${game_rounds[game.round - 1][0]} result: ${game.results[game.round - 1]}</li>`
+            const result_li = `in: ${game_rounds[game.round - 1][0]} res: ${game.results[game.round - 1]} `
             $xor_results.html($xor_results.html()+result_li)
           }
 
           if (game.round >= game_rounds.length) {
             game.on = false
             let fitness = 0
-            console.log(game.results, game.results.length)
             for (var i = 0; i < game.results.length; i++) {
               fitness += game.results[i] === game_rounds[i][1]
             }
-            console.log('Game ended with fitness=', fitness)
-            $xor_results.html($xor_results.html()+'<li>Game ended waiting for a new game...</li>')
-            setTimeout(() => {
-              webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
-            }, 5e1)
+            $xor_results.html($xor_results.html()+' -> END')
+            // setTimeout(() => {
+            //   webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
+            // }, 5e1)
+            webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
+
           } else {
             game.inputs = game_rounds[game.round]
             webSocketInstance.send(JSON.stringify({ status: 'round check', inputs: game.inputs }))

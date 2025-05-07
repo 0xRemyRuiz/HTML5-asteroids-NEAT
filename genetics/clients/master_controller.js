@@ -27,28 +27,35 @@ export default (wss, current_game, ws, object) => {
         wss.clients.forEach((client) => {
           client.send(JSON.stringify({ msg: 'game change', subject: current_game.name }))
         })
-        response = 'Game has changed to '+current_game.name
+        response = 'Current game is set to '+current_game.name
         code = 'info'
       }
 
     } else if (object.command === 'lock') {
       wss.clients.forEach((client) => {
-        client.send(JSON.stringify({msg: 'lock'}))
+        if (!object.subject || parseInt(object.subject) == client.id) {
+          client.send(JSON.stringify({msg: 'lock'}))
+        }
       })
 
     } else if (object.command === 'unlock') {
       wss.clients.forEach((client) => {
-        client.send(JSON.stringify({msg: 'unlock'}))
+        if (!object.subject || parseInt(object.subject) == client.id) {
+          client.send(JSON.stringify({msg: 'unlock'}))
+        }
       })
 
     } else if (object.command === 'init') {
       if (current_game.name === null) {
-        response = 'ERROR: command init failed, not game chosen'
+        response = 'ERROR: command init failed, no game chosen'
         code = 'error'
+
       } else {
         current_game.generation_number = 0
         current_game.status = 'init'
       }
+      response = 'Initialization processed'
+      code = 'info'
 
     } else if (object.command === 'run') {
       if (current_game.status !== 'ready') {
@@ -64,12 +71,13 @@ export default (wss, current_game, ws, object) => {
       response = 'ERROR: command not found, type "list" to get the command list'
       code = 'error'
     }
+
     ws.send(JSON.stringify({response, code}))
   }
 
   // stagger answers to master controller to save computational speed for games (clients)
   (async () => {
-    await (() => new Promise((resolve) => {setTimeout(resolve, 2e2)}))()
+    await (() => new Promise(resolve => setTimeout(resolve, 2e2)))()
     ws.send(JSON.stringify({
       status: current_game.status,
       name: current_game.name,

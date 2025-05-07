@@ -83,7 +83,10 @@ export default (current_game, ws, object) => {
   if (current_game.status === 'running') {
     if (object.msg === 'game') {
       if (assign_idx(current_game, ws)) {
-        ws.send(JSON.stringify({ msg: 'restart', game: 'xor', phenotype: current_game.population[ws.assigned_individual_idx].phenotype }))
+        ws.send(JSON.stringify({
+          msg: 'restart', game: 'xor',
+          phenotype: current_game.population[ws.assigned_individual_idx].phenotype
+        }))
       }
 
     } else if (object.status === 'round check' && object.inputs) {
@@ -100,7 +103,10 @@ export default (current_game, ws, object) => {
       }
 
       if (assign_idx(current_game, ws)) {
-        ws.send(JSON.stringify({ msg: 'restart', game: 'xor', phenotype: current_game.population[ws.assigned_individual_idx].phenotype }))
+        ws.send(JSON.stringify({
+          msg: 'restart', game: 'xor',
+          phenotype: current_game.population[ws.assigned_individual_idx].phenotype
+        }))
       }
     }
   }
