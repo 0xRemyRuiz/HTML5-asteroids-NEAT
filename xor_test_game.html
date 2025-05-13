@@ -58,10 +58,11 @@
           webSocketInstance.send(JSON.stringify({ msg: 'game', game: 'xor' }))
 
         } else if (parsedData.msg === 'restart' && parsedData.phenotype) {
-          console.log('Received restart', current_game, parsedData)
+          // console.log('Received restart', current_game, parsedData)
           if (current_game !== 'xor' && parsedData.game !== 'xor') {
             return
           }
+
           NETWORK_PANEL_SHOWN = true
           current_game = parsedData.game
           current_phenotype = parsedData.phenotype
@@ -91,10 +92,10 @@
               fitness += game.results[i] === game_rounds[i][1]
             }
             $xor_results.html($xor_results.html()+' -> END')
-            // setTimeout(() => {
-            //   webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
-            // }, 5e1)
-            webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
+            setTimeout(() => {
+              webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
+            }, 5e3)
+            // webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
 
           } else {
             game.inputs = game_rounds[game.round]
@@ -104,7 +105,9 @@
           game.round++
         }
 
-      } catch(e) {}
+      } catch(e) {
+        console.error(e)
+      }
     }
 
     const removeWebSocketListeners = () => {

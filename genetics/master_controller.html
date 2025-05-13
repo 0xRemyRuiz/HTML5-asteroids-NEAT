@@ -26,6 +26,7 @@
       <li>Client number: <span id="client-number"></span></li>
       <li>Current generation number: <span id="generation-number"></span></li>
       <li>Best fitness score: <span id="best-fitness-score"></span></li>
+      <li>List of available individuals: <span id="available-individuals"></span></li>
       <li>
         Finished games on total population<br>
         <span id="number-finished-game"></span>/<span id="total-population"></span>
@@ -40,7 +41,8 @@
         $generation_number = null,
         $best_fitness_score = null,
         $number_finished_game = null,
-        $total_population = null
+        $total_population = null,
+        $available_individuals = null
 
     function send_command() {
       const $commander = $('#commander')
@@ -88,6 +90,7 @@
       if ($best_fitness_score === null) $best_fitness_score = $('#best-fitness-score')
       if ($number_finished_game === null) $number_finished_game = $('#number-finished-game')
       if ($total_population === null) $total_population = $('#total-population')
+      if ($available_individuals === null) $available_individuals = $('#available-individuals')
     }
 
     const onmessage = (event) => {
@@ -122,6 +125,7 @@
               $best_fitness_score.html(parsedData.best_fitness_score)
               $number_finished_game.html(parsedData.number_finished_game)
               $total_population.html(parsedData.total_population)
+              $available_individuals.html(parsedData.available_individuals)
             }
           }
         }

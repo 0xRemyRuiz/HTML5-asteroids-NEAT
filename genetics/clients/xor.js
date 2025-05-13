@@ -1,4 +1,7 @@
 
+import {Population} from '../neat/population.js'
+import {config} from '../neat/neat.js'
+
 // Algorithm
 //-Step0 Start from gen 0 (from static config)
 // create node(0, input) then node(1, input) finally node(2, output)
@@ -46,6 +49,10 @@ const assign_idx = (current_game, ws) => {
 }
 
 const init_population = (current_game) => {
+
+
+  // return
+
   current_game.population = []
   for (var i = 0; i < 5; i++) {
     // TEST: random here replaces the NN behavior
@@ -63,6 +70,8 @@ const init_population = (current_game) => {
 export default (current_game, ws, object) => {
   // initialize hack
   if (ws === null) {
+    // current_game.population = new Population()
+    // return
     current_game.generation_number = 0
     init_population(current_game)
     return

@@ -24,8 +24,7 @@ const current_game = {
   generation_number: null,
   best_fitness_score: null,
   number_finished_game: null,
-  population: [],
-  pop_idx: 0,
+  population: null,
   available_individuals: {},
 }
 

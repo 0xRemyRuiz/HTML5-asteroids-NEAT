@@ -8,15 +8,15 @@ let network_viz_test_mode = false
 var test_data = {
   specie: 'aba',
   nodes: {
-    0: {id: 0, layer: 0, innov: 0},
-    1: {id: 1, layer: 0, innov: 0},
-    2: {id: 2, layer: 0, innov: 0},
-    3: {id: 3, layer: 0, innov: 0},
-    4: {id: 4, layer: 0, innov: 0},
-    5: {id: 5, layer: 2, innov: 2},
-    6: {id: 6, layer: 2, innov: 0},
-    7: {id: 7, layer: 1, innov: 3},
-    8: {id: 8, layer: 1, innov: 5},
+    0: {id: 0, layer: 0},
+    1: {id: 1, layer: 0},
+    2: {id: 2, layer: 0},
+    3: {id: 3, layer: 0},
+    4: {id: 4, layer: 0},
+    5: {id: 5, layer: 2},
+    6: {id: 6, layer: 2},
+    7: {id: 7, layer: 1},
+    8: {id: 8, layer: 1},
   },
   connections: [
     {from: 0, to: 5, innov: 2, enabled: true, weight: 1.2},
@@ -49,8 +49,8 @@ function draw_node(ctx, node, color = 'grey') {
 
   ctx.fillStyle = 'blue'
   ctx.fillText(node.id, node.x - (c + 6), node.y + c + 6)
-  ctx.fillStyle = fillStyle
-  ctx.fillText('i:'+node.innov, node.x + c + 2, node.y + c + 2)
+  // ctx.fillStyle = fillStyle
+  // ctx.fillText('i:'+node.innov, node.x + c + 2, node.y + c + 2)
 
   ctx.fillStyle = fillStyle
   ctx.strokeStyle = strokeStyle
@@ -134,10 +134,16 @@ const resize_network_canva = (network = null) => {
   }
 
   const margin = $network_canva.width / 10 // 10% margin
-  const xSpace = $network_canva.width / (network_phenotype.layers.length - 1) - margin
+  const xSpace = (() => {
+    if (network_phenotype.layers.length > 2) {
+      return $network_canva.width / (network_phenotype.layers.length - 1) - margin
+    } else {
+      return $network_canva.width - (margin * 2)
+    }
+  })()
 
   for (let i = 0; i < network_phenotype.layers.length; i++) {
-    let ySpace = $network_canva.height / (network_phenotype.layers[i].length + 1)
+    const ySpace = $network_canva.height / (network_phenotype.layers[i].length + 1)
     for (let j = 0; j < network_phenotype.layers[i].length; j++) {
       network_phenotype.nodes[network_phenotype.layers[i][j]].x = xSpace * i + margin
       network_phenotype.nodes[network_phenotype.layers[i][j]].y = ySpace * (j + 1)

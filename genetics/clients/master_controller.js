@@ -84,8 +84,9 @@ export default (wss, current_game, ws, object) => {
       client_connected: current_game.client_connected,
       generation_number: current_game.generation_number,
       best_fitness_score: current_game.best_fitness_score,
-      total_population: current_game.population.length,
+      total_population: current_game.total_population,
       number_finished_game: current_game.number_finished_game,
+      available_individuals: current_game.available_individuals,
     }))
   })()
 }

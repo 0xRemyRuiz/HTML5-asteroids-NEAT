@@ -1,21 +1,16 @@
-//      cf. medium.com/@eugenesh4work/how-to-solve-games-with-genetic-algorithms-building-an-advanced-neuroevolution-solution-71c1817e0bf2
+//  N/A cf. medium.com/@eugenesh4work/how-to-solve-games-with-genetic-algorithms-building-an-advanced-neuroevolution-solution-71c1817e0bf2
 //      cf. github.com/chuanhao01/Javascript_NEAT
 
 //      cf. medium.com/@nirajsawant2313/a-simple-ai-using-neat-neuroevolution-of-augmenting-topologies-ae1b7d8f4a5e
 //      cf. https://medium.com/data-science/https-medium-com-piotr-skalski92-deep-dive-into-deep-networks-math-17660bc376ba
-//      cf. https://blog.lunatech.com/posts/2024-02-29-the-neat-algorithm-evolving-neural-network-topologies
+//  !!! cf. https://blog.lunatech.com/posts/2024-02-29-the-neat-algorithm-evolving-neural-network-topologies
 // !!!! cf. https://www.youtube.com/watch?v=yVtdp1kF0I4
 //   !! cf. https://www.youtube.com/watch?v=vf18FLdKkY4
 // !!!! cf. https://dev.to/jbahire/demystifying-the-xor-problem-1blk
 //    ! cf. https://www.youtube.com/watch?v=KiW-W4v0nBo
-// ???? cf. https://www.youtube.com/watch?v=zc5NTeJbk-k
 //  !!! cf. https://www.youtube.com/watch?v=6ym3tTzPSUQ
 
-/**
- * 
- * Global NEAT configuration
- *
- **/
+// Example neat configuration to get inspiration from
 // based on cf. https://neat-python.readthedocs.io/en/latest/xor_example.html
 const NEAT_config = {
   //- NEAT
@@ -107,7 +102,7 @@ const NEAT_config = {
 // Partially derived from neat python documentation
 // cf. https://neat-python.readthedocs.io/en/latest/activation.html
 // Also base verification from https://en.wikipedia.org/wiki/Activation_function
-const activation = {
+export const activation = {
   'ident': function(x) {
     return x
   },
@@ -181,9 +176,22 @@ const activation = {
   },
 }
 
-
-try {
-export default () => {
-  return
+/**
+ * 
+ * Default NEAT configuration
+ *
+ **/
+export const config = {
+  'mutation_rate': 0.7,
+  'major_mutation_rate': 0.1,
+  'activation_options': ['sigmoid'],
+  'speciation_shield': 3,
 }
-} catch (e) {}
+
+export const update_config = (obj) => {
+  if (typeof obj === 'object') {
+    config = {...config, ...obj}
+  } else {
+    console.warn('Warning: update_config function needs an object as argument!')
+  }
+}
