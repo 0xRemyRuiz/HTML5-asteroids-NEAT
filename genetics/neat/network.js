@@ -1,108 +1,8 @@
-import {config, activation} from './neat.js'
-
-export class Node {
+export default class Network {
   /*
    * Internal properties
    */
-  #id
-  #activation_name
-  #activation_func
-  #parent
-  #type
-  value = 1 // this is default but only really applicable to bias node
-
-  /*
-   * Public methods
-   */
-  constructor(id, activation_name, activation_func, parent, type) {
-    this.#id = id
-    this.#activation_name = activation_name
-    this.#activation_func = activation_func
-    this.#parent = parent
-    this.#type = type
-  }
-
-  change_activation(activation_name, activation_func) {
-    if (type === 'hidden') {
-      this.#activation_name = activation_name
-      this.#activation_func = activation_func
-      return true
-    }
-    return false
-  }
-
-  copy() {
-    // pass over a copy of this node
-    return new Node(this.#type, this.#id, this.#activation_name, this.#activation_func)
-  }
-
-  get_id() {
-    return this.#id
-  }
-
-  get_type() {
-    return this.#type
-  }
-
-  get_parent() {
-    return this.#parent
-  }
-
-  get_activation_name() {
-    return this.#activation_name
-  }
-}
-
-export class Connection {
-  /*
-   * Internal properties
-   */
-  #enabled = true
-  #innov = null
-  #from = null
-  #to = null
-  #weight = null
-
-  /*
-   * Public methods
-   */
-  constructor(innov, from, to, weight = Math.random()) {
-    this.#innov = innov
-    this.#from = from
-    this.#to = to
-    this.#weight = weight
-  }
-
-  toggle_enable() {
-    this.#enabled = !this.#enabled
-  }
-
-  disable() {
-    this.#enabled = false
-  }
-
-  change_weight(weight = Math.random()) {
-    this.#weight = weight
-  }
-
-  copy() {
-    return new Connection(this.#innov, this.#from, this.#to, this.#weight)
-  }
-
-  get_innov() {
-    return this.#innov
-  }
-
-  get_id() {
-    return this.#from+'-'+this.#to+'-'+this.#innov
-  }
-}
-
-export class Network {
-  /*
-   * Internal properties
-   */
-  #specie = "null"
+  #specie = 0
   #hidden_nodes = {}
   #layers = []
   // n is the total number of hidden nodes
@@ -111,28 +11,20 @@ export class Network {
   #compute_values = {}
   #feed_forward = true
   #fitness = 0
+  #adjusted_fitness = 0
+
+  /*
+   * Private methods
+   */
+  #connect_nodes(connection) {
+    this.#connections.push(connection)
+  }
 
   /*
    * Public methods
    */
-  update_specie() {
-    const node_ids_list = []
-    for (k in this.#hidden_nodes) {
-      node_ids_list.append(k)
-    }
-    if (node_ids_list.length === 0) {
-      this.#specie = "null"
-    } else {
-      node_ids_list.sort((a, b) => a <= b ? -1 : 1)
-      this.#specie = node_ids_list[0].toString()
-      for (let i = 1; i < node_ids_list.length; i++) {
-        this.#specie += "-"+node_ids_list[i].toString()
-      }
-    }
-  }
-
-  /* On fitness (from NEAT paper)
-     ----------------------------
+  /* On fitness (from NEAT 2nd paper)
+     --------------------------------
     One way to force minimal topologies is to incorporate network size into the fitness
     function[...]. In such methods, larger networks have their fitnesses penalized. Although
     [...] Altering the fitness function is ad hoc and may cause evolution to perform
@@ -153,13 +45,63 @@ export class Network {
     distribution curve might be interesting. Still the final fitness depends on base calculation.
     Here `m / n` is used instead of `1 / n` to not penalize NN with huge number of input and output.
   */
-  set_fitness(score, m) {
-    this.#fitness = score * (1 + m / (m + this.#n))
+  constructor(hidden_nodes, connections) {
+    // TODO: maybe check for types here
+    for (let k in hidden_nodes) {
+      this.#hidden_nodes[k] = hidden_nodes[k].get_copy()
+    }
+    for (let k in connections) {
+      this.#connections[k] = connections[k].get_copy()
+    }
   }
 
-  get_phenotype() {
+  set_fitness(fitness, m) {
+    // Idea is set aside for the moment
+    // this.#fitness = score * (1 + m / (m + this.#n))
+    this.#fitness = fitness
+  }
 
+  set_specie(specie) {
+    this.#specie = specie
+  }
+
+  get_genotype() {
     return { specie: this.#specie, hidden_nodes: this.#hidden_nodes, connections: this.#connections }
+  }
+
+  get_blob() {
+    const connections = {}
+    for (let k in this.#connections) {
+      connections[k] = this.#connections[k].get()
+    }
+    const hidden_nodes = {}
+    for (let k in this.#hidden_nodes) {
+      hidden_nodes[k] = this.#hidden_nodes[k].get()
+    }
+    return {
+      specie: this.#specie,
+      hidden_nodes: hidden_nodes,
+      layers: this.#layers,
+      // n is the total number of hidden nodes
+      n: this.#n,
+      connections: connections,
+      compute_values: this.#compute_values,
+      feed_forward: this.#feed_forward,
+      fitness: this.#fitness,
+      adjusted_fitness: this.#adjusted_fitness,
+    }
+  }
+
+  get_copy() {
+    const connections = {}
+    for (let k in this.#connections) {
+      connections[k] = this.#connections[k]
+    }
+    const hidden_nodes = {}
+    for (let k in this.#hidden_nodes) {
+      hidden_nodes[k] = this.#hidden_nodes[k]
+    }
+    return new Network(hidden_nodes, connections)
   }
 
   get_random_connection() {
@@ -173,8 +115,26 @@ export class Network {
     return undefined
   }
 
+  get_fitness() {
+    return this.#fitness
+  }
+
+  mutate_weight() {
+    if (this.#connections.length === 0) {
+      return
+    }
+    // TODO: check if this is really evenly distributed...
+    const rnd = Math.floor(Math.random() * (this.#connections.length + 1)) - 1
+    this.#connections[rnd].change_weight()
+  }
 
   add_node(node) {
+    /* From NEAT 2nd paper
+       -------------------
+       "The old connection is disabled and two new connections are added to the genome.
+        The new connection leading into the new node receives a weight of 1, and the new
+        connection leading out receives the same weight as the old connection."
+     */
     this.#hidden_nodes[node.get_id()] = node
   }
 

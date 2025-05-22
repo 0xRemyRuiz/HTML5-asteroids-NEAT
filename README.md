@@ -7,7 +7,7 @@ It's main purpose is for me to learn by doing.
 INSTALL and RUN
 ---------------
 Just open the `index.html` file on your favorite browser and try to get a highscore.
-The game is playable by itself, no need of npm which only handles the training of IA agents an autoplay of the game.
+The game is playable by itself, no need of npm which only handles the training of AI agents an autoplay of the game.
 
 To run the NEAT algorithm for training and autoplay first install the node handler.
 `cd genetics`

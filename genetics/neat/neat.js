@@ -182,16 +182,20 @@ export const activation = {
  *
  **/
 export const config = {
-  'mutation_rate': 0.7,
-  'major_mutation_rate': 0.1,
+  // chance to mutate given genome
+  'mutation_chance': 1,
+  // chance a specific mutation can occur [connection weight, connection add, node add]
+  'mutation_rates': [0.5, 0.3, 0.2],
+  // neuron activation functions for hidden nodes
   'activation_options': ['sigmoid'],
-  'speciation_shield': 3,
-}
-
-export const update_config = (obj) => {
-  if (typeof obj === 'object') {
-    config = {...config, ...obj}
-  } else {
-    console.warn('Warning: update_config function needs an object as argument!')
-  }
+  // percentage of top performers kept (let aside shielded species)
+  'elitism': 0.2,
+  // number of generations for which a new specie is protected from removal
+  'speciation_shield': 5,
+  // δt value below which a new genome can be integrated into existing specie or create a new one
+  'speciation_threshold': 3,
+  // c1, c2 and c3 constants used in δ calculation
+  'speciation_coefficients': [1, 1, 1],
+  // enable factor to favorize smaller networks
+  'huge_network_penalty': false,
 }
