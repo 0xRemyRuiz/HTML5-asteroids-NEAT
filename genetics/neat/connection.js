@@ -27,6 +27,10 @@ export default class Connection {
     this.#enabled = false
   }
 
+  is_enabled() {
+    return !!this.#enabled
+  }
+
   change_weight(weight = Math.random()) {
     this.#weight = weight
   }

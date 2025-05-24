@@ -184,8 +184,8 @@ export const activation = {
 export const config = {
   // chance to mutate given genome
   'mutation_chance': 1,
-  // chance a specific mutation can occur [connection weight, connection add, node add]
-  'mutation_rates': [0.5, 0.3, 0.2],
+  // chance a specific mutation can occur [connection weight, connection add, node add, bias]
+  'mutation_rates': [0.6, 0.4, 0.2, 0.05],
   // neuron activation functions for hidden nodes
   'activation_options': ['sigmoid'],
   // percentage of top performers kept (let aside shielded species)

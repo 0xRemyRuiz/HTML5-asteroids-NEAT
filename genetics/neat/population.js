@@ -17,6 +17,8 @@ export default class Population {
   #m = 0
   #node_uid = 0
   #nodes = {}
+  // parents are a list of acenstry updated when a connection is split in two and a node created
+  #parents = {}
   #connection_innovation_number = 0
   #connections = {}
   #networks = []
@@ -26,7 +28,7 @@ export default class Population {
   /*
    * Private methods
    */
-  #add_new_connection(from, to) {
+  #create_new_connection(from, to, weight = 1) {
     for (let k in this.#connections) {
       if (this.#connections[k].from === from && this.#connections[k].to === to) {
         // if such connection already exists, return the connection
@@ -34,33 +36,84 @@ export default class Population {
       }
     }
     // else create a new connection and increment the innovation number
-    const new_connection = new Connection(this.#connection_innovation_number, from, to)
+    const new_connection = new Connection(this.#connection_innovation_number, from, to, weight)
     this.#connections[this.#connection_innovation_number] = new_connection
     this.#connection_innovation_number++
     return new_connection
   }
 
-  #create_new_specie(network) {
+  #create_new_specie_from_network(network) {
     this.#species[this.#specie_id] = {
-      // TODO: parametrize this
+      // TODO: parametrize this from config
       shield: 3,
       representative: network,
     }
     this.#specie_id++
   }
 
-  #mutate_network(network_id) {
+  #mutate_network_by_id(network_idx) {
     // if (Math.random() <= 1)
     // TODO: parametrize from config  'mutation_rates': [0.5, 0.3, 0.2],
-    if (Math.random() <= 0.5) {
-      // mutate connection weight
-      this.#networks[network_id].mutate_weight()
+    const selected_network = this.#networks[network_idx]
+
+    // CONNECTION MUTATE
+    if (Math.random() <= 0.6) {
+      selected_network.mutate_weight()
     }
-    if (Math.random() <= 0.3) {
+
+    // CONNECTION ADD
+    if (Math.random() <= 0.4) {
       // mutate connection add
+      const candidate_connection = selected_network.get_candidate_connection()
+      // did we find a viable candidate?
+      if (candidate_connection !== undefined) {
+        // TODO: maybe parametrize the random weight selection
+        this.#create_new_connection(candidate_connection[0], candidate_connection[1], Math.random())
+      }
     }
+
+    /* From NEAT 2nd paper
+       -------------------
+       "The old connection is disabled and two new connections are added to the genome.
+        The new connection leading into the new node receives a weight of 1, and the new
+        connection leading out receives the same weight as the old connection."
+     */
+    // NODE ADD
     if (Math.random() <= 0.2) {
-      // mutate node add
+      // TODO: try to refactor here
+      const candidate_connection = selected_network.get_random_connection()
+      // if there is at least one viable candidate to be split
+      if (candidate_connection !== undefined) {
+        // create the node
+        let new_node = undefined
+        if (this.parents[candidate_connection.get_innov()] === undefined) {
+          const new_node_id = this.create_new_node('sigmoid', 'hidden', candidate_connection.get_innov())
+          if (new_node_id !== null) {
+            new_node = this.#nodes[new_node_id]
+          }
+        } else {
+          // or grab the already existing gene
+          new_node = this.parents[candidate_connection.get_innov()]
+        }
+        // only if the new node creation process succeeded we continue
+        if (new_node !== undefined) {
+          selected_network.add_node(new_node)
+          const old_conn = candidate_connection.get()
+          selected_network.disable_connection_by_innov(old_conn.innov)
+          // create first connection with weight = 1
+          const c1 = this.#create_new_connection(old_conn.from, old_conn.to)
+          selected_network.add_connection(c1)
+          // create second connection with the weight from the old connection
+          const c2 = this.#create_new_connection(old_conn.from, old_conn.to, old_conn.weight)
+          selected_network.add_connection(c2)
+        }
+      }
+    }
+
+    // BIAS MUTATE
+    if (Math.random() <= 0.05) {
+      // mutate bias value
+      // TODO TODO
     }
   }
 
@@ -103,14 +156,17 @@ export default class Population {
     // TODO: eventually ensure that input and output nodes can't be added after initialization
     // new_node here is a function as it acts as a generator, allocating the new_node only if needed and deduplicating code
     const new_node = () => new Node(this.#node_uid, activation_name, activation[activation_name], type, parent)
+    const id = this.#node_uid
 
     if (type === 'hidden') {
       // if it is a hidden node, check parent connection to ensure uniqueness
-      if (parent === null) {
-        console.warn('Warning: Population.create_new_node method for hidden node requires a 3rd parameter parent')
+      if (isNaN(parent)) {
+        console.warn('Warning: Population.create_new_node method for hidden node requires a 3rd parameter parent of type number')
+        return null
 
       } else if (this.#nodes[parent] === undefined) {
-        this.#nodes[parent] = new_node()
+        this.#nodes[this.#node_uid] = new_node()
+        this.#parents[parent] = this.#nodes[this.#node_uid]
       }
 
     } else if (type === 'input' || type === 'bias') {
@@ -122,11 +178,11 @@ export default class Population {
       this.#m++
 
     } else {
-      return false
+      return null
     }
 
     this.#node_uid++
-    return true
+    return id
   }
 
   initialize(adam = null, pop_size = 15) {
@@ -139,48 +195,56 @@ export default class Population {
           continue
         }
         for (let o in this.#output_nodes) {
-          const connection = this.#add_new_connection(this.#input_nodes[i].get_id(), this.#output_nodes[o].get_id())
-          connections[connection.get_innov()] = connection
+          const new_connection = this.#create_new_connection(this.#input_nodes[i].get_id(), this.#output_nodes[o].get_id())
+          connections[new_connection.get_innov()] = new_connection
         }
       }
       adam = new Network({}, connections)
     }
-    this.#create_new_specie(adam)
+    this.#create_new_specie_from_network(adam)
+    // set the shield value for the first the initial specie to 0
+    this.#species[0].shield = 0
     for (let i = pop_size; i > 0; i--) {
       const new_network = adam.get_copy()
       // mutate the network
-      // TODO: do real mutation here!
-      new_network.set_fitness(Math.random(), 5)
+      this.#mutate_network_by_id(new_network.get_id())
       // add to the pool
       this.#networks.push(new_network)
     }
   }
 
   breed_new_population() {
-    // TODO: STEP 0 elitism
+    //- STEP 0: elitism
     const get_the_networks = (networks = this.#networks) => {
       const nets = []
       for (let i = 0; i < networks.length; i++) {
-        nets.push([i, networks[i].get_fitness()])
+        nets.push([i, networks[i].get_fitness(), networks[i].get_specie()])
       }
       return nets
     }
-    console.log("========BEFORE========", get_the_networks())
     this.#networks.sort((a, b) => a.get_fitness() < b.get_fitness() ? 1 : -1)
     // TODO: replace with the config version of this value
-    const real_elitism = this.#networks.length / 100 * 20
-    console.log("removing:", real_elitism, "========DURING========", get_the_networks())
+    const real_elitism = this.#networks.length * 0.2
     const eliminated = this.#networks.slice(real_elitism)
-    console.log("========ELIMINATED========", get_the_networks(eliminated))
+    const saved = eliminated.filter((net) => this.#species[net.get_specie()].shield > 0)
     // TODO: check for shielded species members to spare from removal
     this.#networks = this.#networks.slice(0, real_elitism)
-    console.log("========AFTER========", get_the_networks())
-    // TODO: STEP 1 loop through remaning individuals
-    // TODO: STEP 1a mutate
-    // TODO: calc specie dist: δ = (c1 * E) / N + (c2 * D) / N + c3 * W
-    // TODO: explicit fitenss sharing: f′ = fi / ∑(n, j=1)(sh(δ(i, j))
-    //       sh(δ(i, j) = 0 if δt is above δ threshold else it is 1
+    //- STEP 1: loop through remaning individuals
+    for (let k in this.#networks) {
+      // TODO: STEP 1a breed children
+      // TODO: STEP 1b loop through children
+      // TODO: STEP 1c mutate child
+      // TODO: calc specie dist: δ = (c1 * E) / N + (c2 * D) / N + c3 * W
+      // TODO: explicit fitenss sharing: f′ = fi / ∑(n, j=1)(sh(δ(i, j))
+      //       sh(δ(i, j) = 0 if δt is above δ threshold else it is 1
+    }
     // Explicit sharing function is used to limit the growth of a specie in terms of individual
+    // Decrease each remaining shield value for species
+    for (let k in this.#species) {
+      if (this.#species[k].shield > 0) {
+        this.#species[k].shield--
+      }
+    }
   }
 
   get_population_size() {
