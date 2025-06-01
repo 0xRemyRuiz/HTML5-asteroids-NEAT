@@ -35,6 +35,8 @@ export default class Network {
    * Private methods
    */
   #update_insights() {
+    // 
+    // STEP 1
     // topologically sort nodes based on connections
     const adjacency = {}
     for (let k in this.#connections) {
@@ -62,11 +64,12 @@ export default class Network {
       dfs(this.#input_nodes[k].get_id())
     }
 
+    // 
+    // STEP 2
     // once the topological order has been computed, we compute per layer order
     const node_to_layer = {}
     const layers = {}
 
-    // TODO: improve this, incoming_layers might be replaced with a simple number
     for (const node_id of this.#sorted_nodes) {
       // skip output nodes
       if (this.#output_nodes[node_id]) {
@@ -114,6 +117,8 @@ export default class Network {
     // add output nodes add the end
     this.#layers.push(Object.keys(this.#output_nodes).map((s) => parseInt(s)))
 
+    // 
+    // STEP 3
     // now that layers have been computed we compute available connections
     this.#available_connections = {}
     // each row
@@ -191,7 +196,7 @@ export default class Network {
   }
 
   get_phenotype() {
-    const get_object = (obj) => {
+    const get_objects = (obj) => {
       const res = {}
       for (let k in obj) {
         res[k] = obj[k].get()
@@ -199,12 +204,12 @@ export default class Network {
       return res
     }
     const nodes = {}
-    Object.assign(nodes, get_object(this.#input_nodes))
-    Object.assign(nodes, get_object(this.#hidden_nodes))
-    Object.assign(nodes, get_object(this.#output_nodes))
+    Object.assign(nodes, get_objects(this.#input_nodes))
+    Object.assign(nodes, get_objects(this.#hidden_nodes))
+    Object.assign(nodes, get_objects(this.#output_nodes))
     return {
       nodes: nodes,
-      connections: get_object(this.#connections),
+      connections: get_objects(this.#connections),
       layers: this.#layers,
     }
   }
@@ -218,39 +223,40 @@ export default class Network {
       }
       return res
     }
-    const input_nodes = get_things(this.#input_nodes)
-    const output_nodes = get_things(this.#output_nodes)
-    const connections = get_things(this.#connections)
-    const hidden_nodes = get_things(this.#hidden_nodes)
     return {
-      input_nodes: input_nodes,
-      output_nodes: output_nodes,
-      hidden_nodes: hidden_nodes,
+      feed_forward: this.#feed_forward,
+      input_nodes: get_things(this.#input_nodes),
+      output_nodes: get_things(this.#output_nodes),
+      hidden_nodes: get_things(this.#hidden_nodes),
       n: this.#n,
-      connections: connections,
+      connections: get_things(this.#connections),
       c: this.#c,
       disabled_connections: this.#disabled_connections,
       compute_values: this.#compute_values,
-      feed_forward: this.#feed_forward,
       fitness: this.#fitness,
       adjusted_fitness: this.#adjusted_fitness,
+      sorted_nodes: this.#sorted_nodes,
+      // layers computed from sorted nodes
+      layers: this.#layers,
+      // simple connection hash map for fast check (like a dict of array in python)
+      connection_set: this.#connection_set,
+      // available connections computed from layers
+      available_connections: this.#available_connections,
     }
   }
 
   get_copy() {
-    // TODO: this needs an update
-    const connections = {}
-    for (let k in this.#connections) {
-      connections[k] = this.#connections[k]
+    const deep_copy = (src) => {
+      const obj = {}
+      for (let k in src) {
+        obj[k] = src[k].get_copy()
+      }
+      return obj
     }
-    const hidden_nodes = {}
-    for (let k in this.#hidden_nodes) {
-      hidden_nodes[k] = this.#hidden_nodes[k]
-    }
-    return new Network(hidden_nodes, connections)
+    // we sould never need a copy of inputs and outputs and they have to never change, never be touched
+    return new Network(this.#input_nodes, this.#output_nodes, deep_copy(this.#hidden_nodes), deep_copy(this.#connections))
   }
 
-  // TODO: fix the case where nodes get added
   get_candidate_connection() {
     let size = Object.keys(this.#available_connections).length
     if (size === 0) {
@@ -296,7 +302,10 @@ export default class Network {
   }
 
   disable_connection_by_innov(connection_innov) {
-    this.#connections[connection_innov].disable()
+    if (this.#connections[connection_innov].is_enabled()) {
+      this.#disabled_connections++
+      this.#connections[connection_innov].disable()
+    }
   }
 
   get_fitness() {
@@ -314,9 +323,9 @@ export default class Network {
     if (this.#hidden_nodes[node.get_id()] === undefined) {
       this.#hidden_nodes[node.get_id()] = node.get_copy()
       this.#n++
-    }
-    if (rearrange) {
-      this.#update_insights()
+      if (rearrange) {
+        this.#update_insights()
+      }
     }
     return this.#hidden_nodes[node.get_id()]
   }
