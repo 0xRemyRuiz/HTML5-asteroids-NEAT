@@ -18,15 +18,15 @@ var test_data = {
     7: {id: 7, layer: 1},
     8: {id: 8, layer: 1},
   },
-  connections: [
-    {from: 0, to: 5, innov: 2, enabled: true, weight: 1.2},
-    {from: 0, to: 6, innov: 2, enabled: false, weight: 0.9},
-    {from: 3, to: 5, innov: 6, enabled: true, weight: 0.9},
-    {from: 0, to: 3, innov: 1, enabled: true, weight: 1.1},
-    {from: 3, to: 6, innov: 1, enabled: true, weight: 1.5},
-    {from: 2, to: 6, innov: 3, enabled: false, weight: 0.2},
-    {from: 4, to: 0, innov: 3, enabled: false, weight: 0.2},
-  ],
+  connections: {
+    0: {from: 0, to: 5, innov: 2, enabled: true, weight: 1.2},
+    1: {from: 0, to: 6, innov: 2, enabled: false, weight: 0.9},
+    2: {from: 3, to: 5, innov: 6, enabled: true, weight: 0.9},
+    3: {from: 0, to: 3, innov: 1, enabled: true, weight: 1.1},
+    4: {from: 3, to: 6, innov: 1, enabled: true, weight: 1.5},
+    5: {from: 2, to: 6, innov: 3, enabled: false, weight: 0.2},
+    6: {from: 4, to: 0, innov: 3, enabled: false, weight: 0.2},
+  },
   layers: [
     [0, 1, 2],
     [5, 6],
@@ -165,8 +165,8 @@ const resize_network_canva = (network = null) => {
     $nc_context.textAlign = align
   }
 
-  for (let i = 0; i < network_phenotype.connections.length; i++) {
-    draw_link($nc_context, network_phenotype.nodes, network_phenotype.connections[i])
+  for (let k in network_phenotype.connections) {
+    draw_link($nc_context, network_phenotype.nodes, network_phenotype.connections[k])
   }
 
   // draw node after so text overlap connections
@@ -178,8 +178,8 @@ const resize_network_canva = (network = null) => {
   }
 
   // write text link after everything so it is on top
-  for (let i = 0; i < network_phenotype.connections.length; i++) {
-    draw_text_link($nc_context, network_phenotype.nodes, network_phenotype.connections[i])
+  for (let k in network_phenotype.connections) {
+    draw_text_link($nc_context, network_phenotype.nodes, network_phenotype.connections[k])
   }
 }
 

@@ -6,12 +6,14 @@ export default class Node {
   #activation_name
   #activation_func
   #type
+  // parent is the connection "parent" fom which is has been created, null means it either is an input or output node
   #parent
 
   /*
    * Public properties
    */
-  value = 1 // this is default but only really applicable to bias node
+  // this is default but only really applicable to bias node
+  value = 1
 
   /*
    * Public methods
@@ -40,6 +42,7 @@ export default class Node {
       activation_func: this.#activation_func,
       parent: this.#parent,
       type: this.#type,
+      value: this.value,
     }    
   }
 

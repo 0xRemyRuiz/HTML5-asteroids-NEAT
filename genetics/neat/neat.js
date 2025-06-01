@@ -184,14 +184,14 @@ export const activation = {
 export const config = {
   // chance to mutate given genome
   'mutation_chance': 1,
-  // chance a specific mutation can occur [connection weight, connection add, node add, bias]
-  'mutation_rates': [0.6, 0.4, 0.2, 0.05],
+  // chance a specific mutation can occur [connection weight, connection add, node add]
+  'mutation_rates': [0.6, 0.4, 0.2],
   // neuron activation functions for hidden nodes
   'activation_options': ['sigmoid'],
   // percentage of top performers kept (let aside shielded species)
   'elitism': 0.2,
-  // number of generations for which a new specie is protected from removal
-  'speciation_shield': 5,
+  // maximum allowed "stagnation" of any given specie, stagnation is decremented if best fitness does not improve
+  'max_stagnation': 3,
   // δt value below which a new genome can be integrated into existing specie or create a new one
   'speciation_threshold': 3,
   // c1, c2 and c3 constants used in δ calculation
