@@ -330,12 +330,14 @@ export default class Network {
     return this.#hidden_nodes[node.get_id()]
   }
 
-  add_connection(connection, rearrange = true) {
+  add_connection(connection) {
     const conn = connection.get()
     const available_conn = this.#available_connections[conn.from]
     if (available_conn !== undefined && this.#connections[conn.innov] === undefined) {
       const idx = available_conn.indexOf(conn.to)
       if (idx !== -1) {
+        // removing the connection from the array of available ones
+        this.#available_connections[conn.from].splice(idx, 1)
         this.#connections[conn.innov] = connection.get_copy()
         this.#c++
         if (!this.#connections[conn.innov].is_enabled()) {
@@ -345,9 +347,6 @@ export default class Network {
           this.#connection_set[conn.from] = []
         }
         this.#connection_set[conn.from].push(conn.to)
-        if (rearrange) {
-          this.#update_insights()
-        }
         return this.#connections[conn.innov]
       }
     }
