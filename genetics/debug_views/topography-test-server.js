@@ -99,6 +99,7 @@ const real_network_phenotype = () => {
 wss.on('connection', (ws) => {
   console.log('Client connected!')
 
+  almost_real_network_test.add_connection(new Connection(15, 3, 8, null, true))
   ws.send(JSON.stringify({phenotype: {...almost_real_network_test.get_phenotype()}}))
   // ws.send(JSON.stringify({phenotype: {...test_network_phenotype}}))
   // ws.send(JSON.stringify({phenotype: {...test_network_phenotype}}))

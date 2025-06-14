@@ -9,6 +9,7 @@ export default class Network {
   #input_nodes
   #output_nodes
   #hidden_nodes = {}
+  #specie
   // n is the total number of hidden nodes
   #n = 0
   #connections = {}
@@ -18,7 +19,9 @@ export default class Network {
   // hashmap to keep values before being computed
   #compute_values = {}
   #fitness = 0
-  // the adjusted fitness is mitigated by f′ = fi / ∑(n, j=1)(sh(δ(i, j))
+  // the adjusted fitness should be mitigated by f′ = fi / ∑(n, j=1)(sh(δ(i, j))
+  // the reality is that is extremely computationally intensive and is very near a simple f′ = fi / N
+  // N being the total number of members in a given population after speciation
   #adjusted_fitness = 0
 
   // insights
@@ -66,7 +69,7 @@ export default class Network {
 
     // 
     // STEP 2
-    // once the topological order has been computed, we compute per layer order
+    // once the topological order has been computed, we compute per layer order (layers is an array of arrays)
     const node_to_layer = {}
     const layers = {}
 
@@ -119,7 +122,7 @@ export default class Network {
 
     // 
     // STEP 3
-    // now that layers have been computed we compute available connections
+    // now that layers have been computed we compute available connections list (hash map, or dict of arrays in python)
     this.#available_connections = {}
     // each row
     for (let i = 0; i < this.#layers.length - 1; i++) {
@@ -236,11 +239,8 @@ export default class Network {
       fitness: this.#fitness,
       adjusted_fitness: this.#adjusted_fitness,
       sorted_nodes: this.#sorted_nodes,
-      // layers computed from sorted nodes
       layers: this.#layers,
-      // simple connection hash map for fast check (like a dict of array in python)
       connection_set: this.#connection_set,
-      // available connections computed from layers
       available_connections: this.#available_connections,
     }
   }
@@ -257,17 +257,29 @@ export default class Network {
     return new Network(this.#input_nodes, this.#output_nodes, deep_copy(this.#hidden_nodes), deep_copy(this.#connections))
   }
 
+  get_all_hidden_nodes() {
+    return this.#hidden_nodes
+  }
+
+  get_all_connections_with_weight() {
+    const res = []
+    for (let k in this.#connections) {
+      res.push({ innov: this.#connections[k].get_innov(), weight: this.#connections[k].get_weight() })
+    }
+    return res.sort((a, b) => a.innov - b.innov)
+  }
+
   get_candidate_connection() {
     let size = Object.keys(this.#available_connections).length
     if (size === 0) {
       return undefined
     }
-    let rnd_from = Math.floor(Math.random() * size)
+    let rnd_countdown = Math.floor(Math.random() * size)
     for (let from in this.#available_connections) {
-      if (rnd_from <= 0) {
+      if (rnd_countdown <= 0) {
         return [from, Math.floor(Math.random() * this.#available_connections[from].length)]
       }
-      rnd_from--
+      rnd_countdown--
     }
     return undefined
   }
@@ -312,10 +324,27 @@ export default class Network {
     return this.#fitness
   }
 
+  get_adjusted_fitness() {
+    return this.#adjusted_fitness
+  }
+
+  set_adjusted_fitness(specie_size) {
+    this.#adjusted_fitness = this.fitness / specie_size
+    return this.#adjusted_fitness
+  }
+
+  get_specie() {
+    return this.#specie
+  }
+
+  set_specie(specie) {
+    this.#specie = specie
+  }
+
   mutate_weight() {
     const random_connection = this.get_random_connection()
     if (random_connection !== undefined) {
-      this.#connections[random_connection].change_weight()
+      random_connection.change_weight()
     }
   }
 
@@ -351,6 +380,14 @@ export default class Network {
       }
     }
     return undefined
+  }
+
+  get_connection(innov) {
+    return this.#connections[innov]
+  }
+
+  get_node(id) {
+    return this.#hidden_nodes[id]
   }
 
   // TODO TODO TODO

@@ -49,6 +49,10 @@ export default class Connection {
     return new Connection(this.#innov, this.#from, this.#to, this.#weight, this.#enabled)
   }
 
+  get_weight() {
+    return this.#weight
+  }
+
   get_innov() {
     return this.#innov
   }
