@@ -37,112 +37,18 @@ export default class Network {
   /*
    * Private methods
    */
-  #update_insights() {
-    // 
-    // STEP 1
-    // topologically sort nodes based on connections
-    const adjacency = {}
-    for (let k in this.#connections) {
-      const conn = this.#connections[k].get()
-      if (adjacency[conn.from] === undefined) {
-        adjacency[conn.from] = []
-      }
-      adjacency[conn.from].push(conn.to)
+  #add_new_connection(connection) {
+    const conn = connection.get()
+    this.#connections[conn.innov] = connection
+    this.#c++
+    if (!this.#connections[conn.innov].is_enabled()) {
+      this.#disabled_connections++
     }
-
-    const visited = new Set()
-    this.#sorted_nodes = []
-    const dfs = (node) => {
-      if (visited.has(node)) {
-        return
-      }
-      visited.add(node)
-      for (let k in adjacency[node]) {
-        dfs(adjacency[node][k])
-      }
-      this.#sorted_nodes.unshift(node)
+    if (this.#connection_set[conn.from] === undefined) {
+      this.#connection_set[conn.from] = []
     }
-
-    for (let k in this.#input_nodes) {
-      dfs(this.#input_nodes[k].get_id())
-    }
-
-    // 
-    // STEP 2
-    // once the topological order has been computed, we compute per layer order (layers is an array of arrays)
-    const node_to_layer = {}
-    const layers = {}
-
-    for (const node_id of this.#sorted_nodes) {
-      // skip output nodes
-      if (this.#output_nodes[node_id]) {
-        continue
-      }
-      // Find all incoming enabled connections to this node
-      const incoming_layers = []
-      for (const k in this.#connections) {
-        const conn = this.#connections[k].get()
-        if (conn.to == node_id && conn.from in node_to_layer) {
-          incoming_layers.push(node_to_layer[conn.from])
-        }
-      }
-
-      const layer = incoming_layers.length > 0 ? Math.max(...incoming_layers) + 1 : 0
-      node_to_layer[node_id] = layer
-
-      if (!layers[layer]) {
-        layers[layer] = []
-      }
-      layers[layer].push(node_id)
-    }
-
-    // Convert layers object to ordered array
-    // this sh*t below has been AI generated (chatGPT 05/2025)
-    // const result = [];
-    // const sortedLayerIndices = Object.keys(layers).map(Number).sort((a, b) => a - b);
-    // for (const index of sortedLayerIndices) {
-    //   result.push(layers[index]);
-    // }
-    // I mean...counting from 0 to x is waaaaayyyyy better...
-
-    this.#layers = []
-    // add input nodes add layer 0
-    this.#layers.push(Object.keys(this.#input_nodes).map((s) => parseInt(s)))
-    // add hidden nodes
-    let idx = 0
-    for (let k in layers) {
-      if (idx !== 0) {
-        // skip index zero, we add input nodes afterward since they could be not connected
-        this.#layers.push(layers[idx.toString()])
-      }
-      idx++
-    }
-    // add output nodes add the end
-    this.#layers.push(Object.keys(this.#output_nodes).map((s) => parseInt(s)))
-
-    // 
-    // STEP 3
-    // now that layers have been computed we compute available connections list (hash map, or dict of arrays in python)
-    this.#available_connections = {}
-    // each row
-    for (let i = 0; i < this.#layers.length - 1; i++) {
-      // each cell
-      for (let x = 0; x < this.#layers[i].length; x++) {
-        const node_from = this.#layers[i][x]
-        this.#available_connections[node_from] = []
-        // each target row
-        for (let j = i + 1; j < this.#layers.length; j++) {
-          // each target cell
-          for (let y = 0; y < this.#layers[j].length; y++) {
-            const node_to = this.#layers[j][y]
-            if (this.#connection_set[node_from] === undefined
-              || !this.#connection_set[node_from].includes(node_to)) {
-              this.#available_connections[node_from].push(node_to)
-            }
-          }
-        }
-      }
-    }
+    this.#connection_set[conn.from].push(conn.to)
+    return this.#connections[conn.innov]
   }
 
   /*
@@ -167,7 +73,7 @@ export default class Network {
       this.#connection_set[conn.from].push(conn.to)
     }
     // topologically sort the nodes then generate layers then generate available connection hash map
-    this.#update_insights()
+    this.update_insights()
   }
 
   /* On fitness (from NEAT 2nd paper)
@@ -218,6 +124,12 @@ export default class Network {
   }
 
   // DEBUG ONLY
+  get_resume() {
+    return {
+      fitness: this.#fitness,
+      adjusted_fitness: this.#adjusted_fitness,
+    }
+  }
   get_blob() {
     const get_things = (thingy) => {
       const res = {}
@@ -329,7 +241,7 @@ export default class Network {
   }
 
   set_adjusted_fitness(specie_size) {
-    this.#adjusted_fitness = this.fitness / specie_size
+    this.#adjusted_fitness = this.#fitness / specie_size
     return this.#adjusted_fitness
   }
 
@@ -348,16 +260,30 @@ export default class Network {
     }
   }
 
-  add_node(node, rearrange = true) {
-    if (this.#hidden_nodes[node.get_id()] === undefined) {
-      this.#hidden_nodes[node.get_id()] = node.get_copy()
+  add_node(node, parent_conn, conn_from, conn_to) {
+    const node_id = node.get_id()
+    if (this.#hidden_nodes[node_id] === undefined) {
+      this.#hidden_nodes[node_id] = node.get_copy()
       this.#n++
-      if (rearrange) {
-        this.#update_insights()
-      }
+      this.disable_connection_by_innov(parent_conn.innov)
+      // create first connection with weight = 1
+      this.#add_new_connection(conn_from)
+      // create second connection with the weight from the old connection
+      this.#add_new_connection(conn_to)
+      this.update_insights()
+      return true
     }
-    return this.#hidden_nodes[node.get_id()]
+    return false
   }
+
+  // add_node(node) {
+  //   if (this.#hidden_nodes[node.get_id()] === undefined) {
+  //     this.#hidden_nodes[node.get_id()] = node.get_copy()
+  //     this.#n++
+  //     return true
+  //   }
+  //   return false
+  // }
 
   add_connection(connection) {
     const conn = connection.get()
@@ -367,16 +293,9 @@ export default class Network {
       if (idx !== -1) {
         // removing the connection from the array of available ones
         this.#available_connections[conn.from].splice(idx, 1)
-        this.#connections[conn.innov] = connection.get_copy()
-        this.#c++
-        if (!this.#connections[conn.innov].is_enabled()) {
-          this.#disabled_connections++
-        }
-        if (this.#connection_set[conn.from] === undefined) {
-          this.#connection_set[conn.from] = []
-        }
-        this.#connection_set[conn.from].push(conn.to)
-        return this.#connections[conn.innov]
+        const new_connection = this.#add_new_connection(connection.get_copy())
+        this.update_insights()
+        return new_connection
       }
     }
     return undefined
@@ -389,6 +308,118 @@ export default class Network {
   get_node(id) {
     return this.#hidden_nodes[id]
   }
+
+  update_insights() {
+    // 
+    // STEP 1
+    // topologically sort nodes based on connections
+    const adjacency = {}
+    for (let k in this.#connections) {
+      const conn = this.#connections[k].get()
+      if (adjacency[conn.from] === undefined) {
+        adjacency[conn.from] = []
+      }
+      adjacency[conn.from].push(parseInt(conn.to))
+    }
+
+    const visited = new Set()
+    this.#sorted_nodes = []
+    const dfs = (node_id) => {
+      node_id = parseInt(node_id)
+      if (visited.has(node_id)) {
+        return
+      }
+      visited.add(node_id)
+      for (let k in adjacency[node_id]) {
+        dfs(adjacency[node_id][k])
+      }
+      this.#sorted_nodes.unshift(node_id)
+    }
+
+    for (let k in this.#input_nodes) {
+      dfs(this.#input_nodes[k].get_id())
+    }
+
+    // 
+    // STEP 2
+    // once the topological order has been computed, we compute per layer order (layers is an array of arrays)
+    const node_to_layer = {}
+    const layers = {}
+
+    for (const node_id of this.#sorted_nodes) {
+      // skip output nodes
+      if (this.#output_nodes[node_id]) {
+        continue
+      }
+      // Find all incoming enabled connections to this node
+      const incoming_layers = []
+      for (const k in this.#connections) {
+        const conn = this.#connections[k].get()
+        if (conn.to == node_id && conn.from in node_to_layer) {
+          incoming_layers.push(node_to_layer[conn.from])
+        }
+      }
+
+      const layer = incoming_layers.length > 0 ? Math.max(...incoming_layers) + 1 : 0
+      node_to_layer[node_id] = layer
+
+      if (!layers[layer]) {
+        layers[layer] = []
+      }
+      layers[layer].push(node_id)
+    }
+
+    // Convert layers object to ordered array
+    // this sh*t below has been AI generated (chatGPT 05/2025)
+    // const result = [];
+    // const sortedLayerIndices = Object.keys(layers).map(Number).sort((a, b) => a - b);
+    // for (const index of sortedLayerIndices) {
+    //   result.push(layers[index]);
+    // }
+    // I mean...counting from 0 to x is waaaaayyyyy better...
+
+    // console.log("BEFORE LAYERS", this.#layers)
+    this.#layers = []
+    // add input nodes add layer 0
+    this.#layers.push(Object.keys(this.#input_nodes).map((s) => parseInt(s)))
+    // add hidden nodes
+    let idx = 0
+    for (let k in layers) {
+      if (idx !== 0) {
+        // skip index zero, we add input nodes afterward since they could be not connected
+        this.#layers.push(layers[idx.toString()])
+      }
+      idx++
+    }
+    // add output nodes add the end
+    this.#layers.push(Object.keys(this.#output_nodes).map((s) => parseInt(s)))
+    // console.log("AFTER LAYERS", this.#layers)
+
+    // 
+    // STEP 3
+    // now that layers have been computed we compute available connections list (hash map, or dict of arrays in python)
+    this.#available_connections = {}
+    // each row
+    for (let i = 0; i < this.#layers.length - 1; i++) {
+      // each cell
+      for (let x = 0; x < this.#layers[i].length; x++) {
+        const node_from = this.#layers[i][x]
+        this.#available_connections[node_from] = []
+        // each target row
+        for (let j = i + 1; j < this.#layers.length; j++) {
+          // each target cell
+          for (let y = 0; y < this.#layers[j].length; y++) {
+            const node_to = this.#layers[j][y]
+            if (this.#connection_set[node_from] === undefined
+              || !this.#connection_set[node_from].includes(node_to)) {
+              this.#available_connections[node_from].push(node_to)
+            }
+          }
+        }
+      }
+    }
+  }
+
 
   // TODO TODO TODO
   // think function executes the thinking process and returns output values

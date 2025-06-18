@@ -38,8 +38,8 @@ export default class Connection {
   get() {
     return {
       innov: this.#innov,
-      from: this.#from,
-      to: this.#to,
+      from: parseInt(this.#from),
+      to: parseInt(this.#to),
       weight: this.#weight,
       enabled: this.#enabled,
     }

@@ -136,7 +136,8 @@ const resize_network_canva = (network = null) => {
   const margin = $network_canva.width / 10 // 10% margin
   const xSpace = (() => {
     if (network_phenotype.layers.length > 2) {
-      return $network_canva.width / (network_phenotype.layers.length - 1) - margin
+      const len = network_phenotype.layers.length - 1
+      return $network_canva.width / len - ((margin * 2) / len)
     } else {
       return $network_canva.width - (margin * 2)
     }

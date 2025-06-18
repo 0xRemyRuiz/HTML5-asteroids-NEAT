@@ -90,9 +90,10 @@ export default class Population {
    */
   #create_new_connection(from, to, weight = 1) {
     for (let k in this.#connections) {
-      if (this.#connections[k].from === from && this.#connections[k].to === to) {
+      const conn = this.#connections[k].get()
+      if (conn.from === from && conn.to === to) {
         // if such connection already exists, return the connection
-        return this.#connections[k]
+        return conn
       }
     }
     // else create a new connection and increment the innovation number
@@ -102,25 +103,32 @@ export default class Population {
     return new_connection
   }
 
+  // #create_new_node(parent) {
+  //   if (nodes[parent] !== undefined) {
+  //     return nodes[parent]
+  //   }
+  //   return new Node()
+  // }
+
   #mutate_network_by_id(network_idx) {
     // if (Math.random() <= 1)
     // TODO: parametrize from config  'mutation_rates': [0.5, 0.3, 0.2],
-    const selected_network = this.#networks[network_idx]
+    const curr_network = this.#networks[network_idx]
 
     // CONNECTION MUTATE
     if (Math.random() <= 0.6) {
-      selected_network.mutate_weight()
+      curr_network.mutate_weight()
     }
 
     // CONNECTION ADD
     if (Math.random() <= 0.4) {
       // TOOD: check if bias should be included here or only below
       // mutate connection add
-      const candidate_connection = selected_network.get_candidate_connection()
+      const candidate_connection = curr_network.get_candidate_connection()
       // did we find a viable candidate?
       if (candidate_connection !== undefined) {
         // TODO: maybe parametrize the random weight selection
-        selected_network.add_connection(this.#create_new_connection(candidate_connection[0], candidate_connection[1], Math.random()))
+        curr_network.add_connection(this.#create_new_connection(candidate_connection[0], candidate_connection[1], Math.random()))
       }
     }
 
@@ -132,34 +140,26 @@ export default class Population {
      */
     // NOTE: in this algorithimic order, a freshly created connection might get immediately split, it's an expected behavior
     // NODE ADD
+    // console.log(curr_network.get_blob())
     if (Math.random() <= 0.2) {
       // TODO: try to refactor here
-      const candidate_connection = selected_network.get_random_connection()
+      const candidate_connection = curr_network.get_random_connection()
       // if there is at least one viable candidate to be split
       if (candidate_connection !== undefined) {
         // create the node
-        let new_node = undefined
-        if (this.#parents[parseInt(candidate_connection.get_innov())] === undefined) {
-          const new_node_id = this.create_new_node('sigmoid', 'hidden', candidate_connection.get_innov())
-          if (new_node_id !== null) {
-            new_node = this.#nodes[new_node_id]
-          }
-        } else {
-          // or grab the already existing gene
-          new_node = this.#parents[candidate_connection.get_innov()]
-        }
-        // only if the new node creation process succeeded we continue
-        if (new_node !== undefined) {
-          selected_network.add_node(new_node)
-          const old_conn = candidate_connection.get()
-          selected_network.disable_connection_by_innov(old_conn.innov)
-          // create first connection with weight = 1
-          selected_network.add_connection(this.#create_new_connection(old_conn.from, old_conn.to))
-          // create second connection with the weight from the old connection
-          selected_network.add_connection(this.#create_new_connection(old_conn.from, old_conn.to, old_conn.weight))
-        }
+        const parent_conn = candidate_connection.get()
+        const new_node_id = this.create_new_node('sigmoid', 'hidden', parent_conn.innov)
+
+        // create first connection with weight = 1
+        const conn1 = this.#create_new_connection(parent_conn.from, new_node_id)
+        // create second connection with the weight from the old connection
+        const conn2 = this.#create_new_connection(new_node_id, parent_conn.to, parent_conn.weight)
+        curr_network.add_node(this.#nodes[new_node_id], parent_conn, conn1, conn2)
       }
     }
+    // console.log(curr_network.get_blob())
+
+    // MUTATE node function
   }
 
   #create_new_specie(representative) {
@@ -183,11 +183,11 @@ export default class Population {
     if (base.length > target.length) {
       size.min = target.length
       size.max = base.length
-      [net1, net2] = [target, base]
+      net1 = target; net2 = base
     } else {
       size.min = base.length
       size.max = target.length
-      [net1, net2] = [base, target]
+      net1 = base; net2 = target
     }
     let i = 0
     let w = 0
@@ -228,7 +228,7 @@ export default class Population {
     const base = network.get_all_connections_with_weight()
     for (let k in this.#species) {
       const specie = this.#species[k]
-      const target = specie.get_all_connections_with_weight()
+      const target = specie.representative.get_all_connections_with_weight()
       if (this.#calculate_delta(base, target) < 3) {
         // if current fitness of the network is better, reset stagnation countdown
         if (specie.best_fitness < network_fitness) {
@@ -240,6 +240,10 @@ export default class Population {
         // this.#specie[k].members.splice(idx, 0, network)
         // this.#specie[k].members.push(network)
         // sort in descending order, index 0 should have the highest fitness
+        if (specie.members.length === 0) {
+          specie.members.push(network)
+          return
+        }
         insert_into(specie.members, network, (a, i, net) => a[i].get_fitness() - net.get_fitness())
         // we have found a matching specie
         return
@@ -257,10 +261,11 @@ export default class Population {
     // there is a huge side effect out of setting nodes from connection gene
     // it's that later genes crush the earlier ones, I'm not sure of the impact of this innovation
     function set_gene_with_nodes(connections, hidden_nodes, parent_object, innov) {
-      const conn = parent_object.p.get_connection(innov).get()
+      const connection = parent_object.p.get_connection(innov)
+      const conn = connection.get()
       const from_id = conn.from, to_id = conn.to
       const addon_connections = {}, addon_hidden_nodes = {}
-      addon_connections[conn.innov] = conn
+      addon_connections[conn.innov] = connection
       if (parent_object.hn[from_id]) {
         addon_hidden_nodes[parent_object.hn[from_id].get().id] = parent_object.hn[from_id]
       }
@@ -348,9 +353,9 @@ export default class Population {
   /*
    * Public methods
    */
-  constructor() {
+  constructor(pop_size = 15) {
     // TODO: parametrize this
-    this.#pop_size = 15
+    this.#pop_size = pop_size
     this.#input_nodes[this.#node_uid] = new Node(this.#node_uid, 'ident', activation['ident'], 'bias')
     this.#m++
     this.#node_uid++
@@ -396,6 +401,11 @@ export default class Population {
     // TODO
   }
 
+  test_mutation_on_network(network_idx) {
+    this.#mutate_network_by_id(network_idx)
+    return this.#networks[network_idx]
+  }
+
   create_new_node(activation_name, type = 'hidden', parent = null) {
     // TODO: eventually ensure that input and output nodes can't be added after initialization
     // new_node here is a function as it acts as a generator, allocating the new_node only if needed and deduplicating code
@@ -408,9 +418,12 @@ export default class Population {
         console.warn('Warning: Population.create_new_node method for hidden node requires a 3rd parameter parent of type number')
         return null
 
-      } else if (this.#nodes[parent] === undefined) {
-        this.#nodes[this.#node_uid] = new_node()
+      }
+      if (this.#parents[parent] === undefined) {
         this.#parents[parent] = this.#nodes[this.#node_uid]
+        this.#nodes[this.#node_uid] = new_node()
+      } else {
+        return this.#parents[parent].get_id()
       }
 
     } else if (type === 'input') {
@@ -435,7 +448,8 @@ export default class Population {
       // let's say, in NEAT, we have a starting individual (adam) with every input connected to every output
       for (let i in this.#input_nodes) {
         // skip bias node
-        if (i === 0) {
+        // i is a string so a good check here is a lazy check
+        if (i == 0) {
           continue
         }
         for (let o in this.#output_nodes) {
@@ -446,23 +460,29 @@ export default class Population {
       adam = new Network(this.#input_nodes, this.#output_nodes, {}, connections)
     }
     const rnd_network = Math.floor(Math.random() * this.#pop_size)
-    // set the shield value for the first the initial specie to 0
-    for (let i = this.#pop_size; i > 0; i--) {
+    const members = []
+    for (let i = this.#pop_size; i >= 0; i--) {
+      // TODO: maybe improve this code
       const new_network = adam.get_copy()
       // add to the pool
       this.#networks.push(new_network)
       // mutate the network
       this.#mutate_network_by_id(this.#networks.length - 1)
       // add the new network to the original specie
-      this.#species[this.#specie_id].members[this.#networks.length - 1] = new_network
+      members.push(new_network)
       if (rnd_network === i) {
         // pick a random network and create specie from it
         this.#create_new_specie(this.#networks[this.#networks.length - 1])
       }
     }
+    this.#species[0].members = members
   }
 
   breed_new_population() {
+    // DEBUG
+    for (let k in this.#networks) {
+      this.#networks[k].set_fitness(Math.random() * 50 + 1)
+    }
     const old_networks = this.#networks
     this.#networks = []
     // 2. (Re)Speciation
@@ -514,16 +534,36 @@ export default class Population {
     let total_pop_target = 0
     const target_pop_size = this.#pop_size - removed_members
     for (let k in this.#species) {
+      const specie = this.#species[k]
       // TODO: parametrize with elitism the (1 - 0.2) and check if it's mathematically correct
       const target = Math.floor((specie.total_adjusted_fitness / global_adjusted_fitness) * target_pop_size * (1 - 0.2))
-      this.#species[k].offspring_target = target
+      specie.offspring_target = target
       total_pop_target += target
     }
+    // DEBUG
+    const display_networks_fitz = (obj) => {
+      for (let k in obj) {
+        const arr = obj[k].members        
+        for (let i = 0; i < arr.length; i++) {
+          console.log('NETWORK['+i+']=', arr[i].get_resume())
+        }
+      }
+    }
     // - sort species
+    // console.log('BEFORE SORTING species:', display_networks_fitz(this.#species))
     this.#species.sort((a, b) => a.members[0].get_adjusted_fitness() - b.members[0].get_adjusted_fitness())
+    // console.log('AFTER SORTING species:', display_networks_fitz(this.#species))
 
-    for (let k in this.#species) {
-      const specie = this.#species[k]
+    return
+    console.log(this.#networks)
+    const per_specie_missing_offspring = Math.floor((this.#pop_size - total_pop_target) / this.#species.length)
+    const remaining = this.#pop_size - (total_pop_target + (per_specie_missing_offspring * this.#species.length))
+    for (let i = 0; i < this.#species.length; i++) {
+      const specie = this.#species[i]
+      if (i === 0) {
+        specie.offspring_target += remaining
+      }
+      specie.offspring_target += per_specie_missing_offspring
       // TODO: parametrize the decimal check size
       const decimal_check = 10 * Math.floor(specie.members[0].get_fitness().toString().length * 0.5)
       // select elites
@@ -540,6 +580,9 @@ export default class Population {
         this.#mutate_network_by_id(this.#networks.length - 1)
       }
     }
+    console.log(this.#networks)
+    // ADD MISSING OFFSPRINGS
+
   }
 
   get_population_size() {
@@ -567,8 +610,8 @@ export default class Population {
     //   sorted_nodes: [0, 1, 2]                                      // sorted_nodes:  array
     // }
 
-    const base_phenotype = this.#networks[network_idx].get_genotype()
+    // const base_phenotype = this.#networks[network_idx].get_phenotype()
     // TODO: concat input+bias+genotype+output
-    return { network, nodes, connections }
+    return this.#networks[network_idx].get_phenotype()
   }
 }
