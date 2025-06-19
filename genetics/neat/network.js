@@ -58,7 +58,8 @@ export default class Network {
     this.#input_nodes = inputs
     this.#output_nodes = outputs
     for (let k in hidden_nodes) {
-      this.add_node(hidden_nodes[k], false)
+      this.#hidden_nodes[k] = hidden_nodes[k].get_copy()
+      this.#n++
     }
     for (let k in connections) {
       this.#connections[k] = connections[k].get_copy()

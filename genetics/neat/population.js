@@ -103,63 +103,59 @@ export default class Population {
     return new_connection
   }
 
-  // #create_new_node(parent) {
-  //   if (nodes[parent] !== undefined) {
-  //     return nodes[parent]
-  //   }
-  //   return new Node()
-  // }
-
   #mutate_network_by_id(network_idx) {
-    // if (Math.random() <= 1)
-    // TODO: parametrize from config  'mutation_rates': [0.5, 0.3, 0.2],
-    const curr_network = this.#networks[network_idx]
+    // TODO: parametrize from config  'mutation_chance'
+    if (Math.random() <= 1) {
+      // TODO: parametrize from config  'mutation_rates': [0.5, 0.3, 0.2],
+      const curr_network = this.#networks[network_idx]
 
-    // CONNECTION MUTATE
-    if (Math.random() <= 0.6) {
-      curr_network.mutate_weight()
-    }
-
-    // CONNECTION ADD
-    if (Math.random() <= 0.4) {
-      // TOOD: check if bias should be included here or only below
-      // mutate connection add
-      const candidate_connection = curr_network.get_candidate_connection()
-      // did we find a viable candidate?
-      if (candidate_connection !== undefined) {
-        // TODO: maybe parametrize the random weight selection
-        curr_network.add_connection(this.#create_new_connection(candidate_connection[0], candidate_connection[1], Math.random()))
+      // CONNECTION MUTATE
+      if (Math.random() <= 0.6) {
+        curr_network.mutate_weight()
       }
-    }
 
-    /* From NEAT 2nd paper
-       -------------------
-       "The old connection is disabled and two new connections are added to the genome.
-        The new connection leading into the new node receives a weight of 1, and the new
-        connection leading out receives the same weight as the old connection."
-     */
-    // NOTE: in this algorithimic order, a freshly created connection might get immediately split, it's an expected behavior
-    // NODE ADD
-    // console.log(curr_network.get_blob())
-    if (Math.random() <= 0.2) {
-      // TODO: try to refactor here
-      const candidate_connection = curr_network.get_random_connection()
-      // if there is at least one viable candidate to be split
-      if (candidate_connection !== undefined) {
-        // create the node
-        const parent_conn = candidate_connection.get()
-        const new_node_id = this.create_new_node('sigmoid', 'hidden', parent_conn.innov)
-
-        // create first connection with weight = 1
-        const conn1 = this.#create_new_connection(parent_conn.from, new_node_id)
-        // create second connection with the weight from the old connection
-        const conn2 = this.#create_new_connection(new_node_id, parent_conn.to, parent_conn.weight)
-        curr_network.add_node(this.#nodes[new_node_id], parent_conn, conn1, conn2)
+      // CONNECTION ADD
+      if (Math.random() <= 0.4) {
+        // TOOD: check if bias should be included here or only below
+        // mutate connection add
+        const candidate_connection = curr_network.get_candidate_connection()
+        // did we find a viable candidate?
+        if (candidate_connection !== undefined) {
+          // TODO: maybe parametrize the random weight selection
+          curr_network.add_connection(this.#create_new_connection(candidate_connection[0], candidate_connection[1], Math.random()))
+        }
       }
-    }
-    // console.log(curr_network.get_blob())
 
-    // MUTATE node function
+      /* From NEAT 2nd paper
+         -------------------
+         "The old connection is disabled and two new connections are added to the genome.
+          The new connection leading into the new node receives a weight of 1, and the new
+          connection leading out receives the same weight as the old connection."
+       */
+      // NOTE: in this algorithimic order, a freshly created connection might get immediately split, it's an expected behavior
+      // NODE ADD
+      if (Math.random() <= 0.2) {
+        // TODO: try to refactor here
+        const candidate_connection = curr_network.get_random_connection()
+        // if there is at least one viable candidate to be split
+        if (candidate_connection !== undefined) {
+          // create the node
+          const parent_conn = candidate_connection.get()
+          const new_node_id = this.create_new_node('sigmoid', 'hidden', parent_conn.innov)
+
+          // create first connection with weight = 1
+          const conn1 = this.#create_new_connection(parent_conn.from, new_node_id)
+          // create second connection with the weight from the old connection
+          const conn2 = this.#create_new_connection(new_node_id, parent_conn.to, parent_conn.weight)
+          curr_network.add_node(this.#nodes[new_node_id], parent_conn, conn1, conn2)
+        }
+      }
+
+      // MUTATE node function
+
+      // don't forget to update the helper elements
+      curr_network.update_insights()
+    }
   }
 
   #create_new_specie(representative) {
@@ -178,50 +174,37 @@ export default class Population {
   #calculate_delta(base, target) {
     // TODO: parametrize this
     const c1 = 1, c2 = 1, c3 = 0.4
-    const size = {}
     let net1, net2
-    if (base.length > target.length) {
-      size.min = target.length
-      size.max = base.length
+    if (base[base.length - 1].innov > target[target.length - 1].innov) {
       net1 = target; net2 = base
     } else {
-      size.min = base.length
-      size.max = target.length
       net1 = base; net2 = target
     }
-    let i = 0
-    let w = 0
-    // common genes
-    while (i < size.min) {
-      if (base[i].innov !== target[i].innov) {
-        break
-      }
-      // increment w with weight diff
-      w += Math.abs(base[i].weight - target[i].weight)
-      i++
-    }
-    let c = i
-    // disjoint genes
-    let D = 0, j = i
-    while (i < size.min && j < size.max) {
-      if (net1[i] === net2[j]) {
-        // common genes do not count as disjoint wherever it's placed
-        w += Math.abs(base[i].weight - target[i].weight)
+    const net1len = net1.length, net2len = net2.length
+    let D = 0, i = 0, j = 0, c = 0, w = 0
+    while (i < net1len && j < net2len) {
+      if (net1[i].innov == net2[j].innov) {
+        // common genes
+        w += Math.abs(net1[i].weight - net2[j].weight)
         c++; i++; j++; continue
-      } else if (net1[i] < net2[j]) {
+      } else if (net1[i].innov < net2[j].innov) {
         i++
       } else {
         j++
       }
+      // disjoint genes
       D++
     }
     // W is the average differences of common genes weight
-    const W = Math.round(w / c)
+    const W = w / c
     // excess genes
-    const E = size.max - (D + c)
-    const N = size.max
+    const E = Math.abs(net1len - net2len) + Math.abs(i - j)
+    // the N factor cannot be the max number of genes in either genomes as paper says, it doesn't make any sense
+    // const N = net1len > net2len ? net1len : net2len
+
     // final calculation
-    return (c1 * E) / N + (c2 * D) / N + c3 * W
+    // return (c1 * E) / N + (c2 * D) / N + c3 * W
+    return c1 * E + c2 * D + c3 * W
   }
 
   #speciate(network, network_fitness) {
@@ -229,6 +212,10 @@ export default class Population {
     for (let k in this.#species) {
       const specie = this.#species[k]
       const target = specie.representative.get_all_connections_with_weight()
+      // this doesn't work, for whatever reason they are not the same reference...oh javascript...
+      if (base == target) {
+        continue
+      }
       if (this.#calculate_delta(base, target) < 3) {
         // if current fitness of the network is better, reset stagnation countdown
         if (specie.best_fitness < network_fitness) {
@@ -237,8 +224,6 @@ export default class Population {
           specie.stagnation_countdown = 3 + 1
         }
         network.set_specie(specie.id)
-        // this.#specie[k].members.splice(idx, 0, network)
-        // this.#specie[k].members.push(network)
         // sort in descending order, index 0 should have the highest fitness
         if (specie.members.length === 0) {
           specie.members.push(network)
@@ -275,38 +260,33 @@ export default class Population {
       Object.assign(connections, addon_connections)
       Object.assign(hidden_nodes, addon_hidden_nodes)
     }
+
+    if (parent1 == undefined || parent2 == undefined)
+      console.warn('reproduce() -> parent '+(parent1 == undefined ? '1' : '2')+' is undefined, fallback to asexual reproduction')
     // asexual reproduction
     if (parent1 === parent2) {
       return parent1.get_copy()
     }
+
     // sexual reproduction
     let p1 = parent1, p2 = parent2
     let nc1 = p1.get_all_connections_with_weight(), nc2 = p2.get_all_connections_with_weight()
-    const l1 = nc1.length, l2 = nc2.length
     // swap objects if necessary so that parent1 is always the one with the smallest number of connections
-    if (l1 > l2) {
+    if (nc1[nc1.length - 1].innov > nc2[nc2.length - 1].innov) {
       [p1, nc1, p2, nc2] = [p2, nc2, p1, nc1]
     }
+    const l1 = nc1.length, l2 = nc2.length
     const hn1 = p1.get_all_hidden_nodes(), hn2 = p2.get_all_hidden_nodes()
     // we use normalized fitness so we compare only the highest decimals
     // this is used to avoid comparisons like 12345678 != 12345679
     const normalized_fitness1 = Math.round(p1.get_fitness() / decimal_check)
     const normalized_fitness2 = Math.round(p2.get_fitness() / decimal_check)
     const connections = {}, hidden_nodes = {}
+
     // if fitness of both is comparable, offspring is a perfect merge of both
     if (normalized_fitness1 === normalized_fitness2) {
-      let i = 0
-      // common genes
-      while (i < l1) {
-        if (nc1[i].innov !== nc2[i].innov) {
-          break
-        }
-        const random_parent = get_rand({p: p1, hn: hn1}, {p: p2, hn: hn2})
-        set_gene_with_nodes(connections, hidden_nodes, random_parent, nc1[i].innov)
-        i++
-      }
       // disjoints and common genes
-      let j = i
+      let i = 0, j = 0
       while (i < l1 && j < l2) {
         if (nc1[i].innov === nc2[j].innov) {
           const random_parent = get_rand({p: p1, hn: hn1}, {p: p2, hn: hn2})
@@ -320,6 +300,7 @@ export default class Population {
           j++
         }
       }
+
       // excess genes
       if (l1 !== l2) {
         if (l1 > l2) {
@@ -334,19 +315,22 @@ export default class Population {
           }
         }
       }
+
     // if network1 is more fit, we inherit all from it
     } else if (normalized_fitness1 > normalized_fitness2) {
       for (let i = 0; i < l1; i++) {
         set_gene_with_nodes(connections, hidden_nodes, {p: p1, hn: hn1}, nc1[i].innov)
         i++
       }
+
     // else it's network2 we inherit all from
     } else {
-      for (let j = 0; j < l1; j++) {
+      for (let j = 0; j < l2; j++) {
         set_gene_with_nodes(connections, hidden_nodes, {p: p2, hn: hn2}, nc2[j].innov)
         j++
       }
     }
+
     return new Network(this.#input_nodes, this.#output_nodes, hidden_nodes, connections)
   }
 
@@ -448,7 +432,7 @@ export default class Population {
       // let's say, in NEAT, we have a starting individual (adam) with every input connected to every output
       for (let i in this.#input_nodes) {
         // skip bias node
-        // i is a string so a good check here is a lazy check
+        // i might be a string so a good check here is a lazy check
         if (i == 0) {
           continue
         }
@@ -461,7 +445,7 @@ export default class Population {
     }
     const rnd_network = Math.floor(Math.random() * this.#pop_size)
     const members = []
-    for (let i = this.#pop_size; i >= 0; i--) {
+    for (let i = this.#pop_size - 1; i >= 0; i--) {
       // TODO: maybe improve this code
       const new_network = adam.get_copy()
       // add to the pool
@@ -480,9 +464,17 @@ export default class Population {
 
   breed_new_population() {
     // DEBUG
-    for (let k in this.#networks) {
-      this.#networks[k].set_fitness(Math.random() * 50 + 1)
-    }
+      const chain_mutate = (network_id, iteration) => {
+        for (let i = 0; i < iteration; i++) {
+          this.#mutate_network_by_id(network_id)
+        }
+      }
+      for (let k in this.#networks) {
+        // chain_mutate(k, 3)
+        this.#networks[k].set_fitness(Math.random() * 50 + 1)
+      }
+    // !DEBUG
+
     const old_networks = this.#networks
     this.#networks = []
     // 2. (Re)Speciation
@@ -507,16 +499,13 @@ export default class Population {
 
     // 3. Remove stagnant species
     let global_adjusted_fitness = 0
+    let current_total_networks = 0
     let removed_members = 0
-    for (let k in this.#species) {
-      const specie = this.#species[k]
+    for (let i = 0; i < this.#species.length; i++) {
+      const specie = this.#species[i]
       specie.stagnation_countdown--
       // TODO: parametrize minimum size of specie
-      if (specie.stagnation_countdown <= 0 || specie.members.length < 2) {
-        // remove the specie
-        this.#species.splice(k, 1)
-        removed_members += specie.members.length
-      } else {
+      if (specie.stagnation_countdown > 0 && specie.members.length > 1) {
         // 4. Share fitness (explicit fitness sharing)
         specie.total_adjusted_fitness = 0
         // calculate adjusted fitness
@@ -526,63 +515,68 @@ export default class Population {
           specie.total_adjusted_fitness += adjusted_fitness
           global_adjusted_fitness += adjusted_fitness
         }
+        current_total_networks += N
         specie.best_fitness = specie.members[0].get_fitness()
+
+      } else {
+        removed_members += specie.members.length
+        this.#species.splice(i, 1)
+        i--
       }
     }
 
     // 5. Calculate offspring per species
     let total_pop_target = 0
-    const target_pop_size = this.#pop_size - removed_members
+    const target_pop_size = this.#pop_size
     for (let k in this.#species) {
       const specie = this.#species[k]
       // TODO: parametrize with elitism the (1 - 0.2) and check if it's mathematically correct
-      const target = Math.floor((specie.total_adjusted_fitness / global_adjusted_fitness) * target_pop_size * (1 - 0.2))
+      const target = Math.floor((specie.total_adjusted_fitness / global_adjusted_fitness) * target_pop_size)
       specie.offspring_target = target
       total_pop_target += target
     }
     // DEBUG
-    const display_networks_fitz = (obj) => {
-      for (let k in obj) {
-        const arr = obj[k].members        
-        for (let i = 0; i < arr.length; i++) {
-          console.log('NETWORK['+i+']=', arr[i].get_resume())
-        }
-      }
-    }
+      // const display_networks_fitz = (obj) => {
+      //   for (let k in obj) {
+      //     console.log('SPECIE '+k)
+      //     const arr = obj[k].members        
+      //     for (let i = 0; i < arr.length; i++) {
+      //       console.log('NETWORK['+i+']=', arr[i].get_resume())
+      //     }
+      //   }
+      // }
+      // display_networks_fitz(this.#species)
+    // -DEBUG
     // - sort species
-    // console.log('BEFORE SORTING species:', display_networks_fitz(this.#species))
     this.#species.sort((a, b) => a.members[0].get_adjusted_fitness() - b.members[0].get_adjusted_fitness())
-    // console.log('AFTER SORTING species:', display_networks_fitz(this.#species))
 
-    return
-    console.log(this.#networks)
     const per_specie_missing_offspring = Math.floor((this.#pop_size - total_pop_target) / this.#species.length)
-    const remaining = this.#pop_size - (total_pop_target + (per_specie_missing_offspring * this.#species.length))
-    for (let i = 0; i < this.#species.length; i++) {
+    const remaining = (this.#pop_size - total_pop_target) % this.#species.length
+    let current_pop = 0
+    for (let i = this.#species.length - 1; i >= 0; i--) {
       const specie = this.#species[i]
+      const elites = specie.members.slice(0, Math.floor(specie.members.length * 0.2))
+      specie.offspring_target += per_specie_missing_offspring - elites.length
+      current_pop += specie.offspring_target + elites.length
+      // complement population using the best specie
       if (i === 0) {
-        specie.offspring_target += remaining
+        specie.offspring_target += this.#pop_size - current_pop
       }
-      specie.offspring_target += per_specie_missing_offspring
       // TODO: parametrize the decimal check size
-      const decimal_check = 10 * Math.floor(specie.members[0].get_fitness().toString().length * 0.5)
+      const decimal_check = 10 ** Math.floor(Math.round(specie.members[0].get_fitness()).toString().length * 0.2)
       // select elites
       // 6. Elitism: preserve top genome from each species
-      this.#networks = this.#networks.concat(specie.members.slice(0, specie.members.length * 0.2))
+      this.#networks = this.#networks.concat(elites)
       // reproduce and mutate candidates
       // 7. Reproduce: crossover or mutation
       const len = specie.members.length
       while (specie.offspring_target-- > 0) {
         const parent1 = specie.members[Math.floor(Math.random() * len)]
         const parent2 = specie.members[Math.floor(Math.random() * len)]
-        const offspring = this.#reproduce(parent1, parent2, decimal_check)
-        this.#networks.push(offspring)
+        this.#networks.push(this.#reproduce(parent1, parent2, decimal_check))
         this.#mutate_network_by_id(this.#networks.length - 1)
       }
     }
-    console.log(this.#networks)
-    // ADD MISSING OFFSPRINGS
-
   }
 
   get_population_size() {
