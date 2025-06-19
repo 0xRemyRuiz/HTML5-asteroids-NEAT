@@ -48,35 +48,19 @@ const assign_idx = (current_game, ws) => {
   return true
 }
 
-const init_population = (current_game) => {
-
-
-  // return
-
-  current_game.population = []
-  for (var i = 0; i < 5; i++) {
-    // TEST: random here replaces the NN behavior
-    current_game.population[i] = {
-      neural_process: () => Math.floor(Math.random() * 2),
-      // TEST: fixed dummy phenotype
-      phenotype: {...test_data},
-      finalFitness: null,
-    }
-  }
-  current_game.pop_idx = 0
-  current_game.number_finished_game = 0
-}
-
 export default (current_game, ws, object) => {
   // initialize hack
   if (ws === null) {
-    // current_game.population = new Population()
-    // return
     current_game.generation_number = 0
-    init_population(current_game)
+    current_game.population = new Population(current_game.population.length)
+    current_game.population.create_new_node('ident', 'input')
+    current_game.population.create_new_node('ident', 'input')
+    current_game.population.create_new_node('sigmoid', 'output')
+    current_game.population.initialize()
     return
   }
 
+  // if the game is running but the current population index is the total population, breed new generation
   if (current_game.status === 'running'
     && current_game.pop_idx === current_game.population.length) {
     let no_individual = true
@@ -85,7 +69,7 @@ export default (current_game, ws, object) => {
     if (no_individual) {
       // TODO: parse through final fitness score then process to breed new generation
       current_game.generation_number++
-      init_population(current_game)
+      current_game.population.breed_new_population()
     }
   }
 
@@ -94,18 +78,19 @@ export default (current_game, ws, object) => {
       if (assign_idx(current_game, ws)) {
         ws.send(JSON.stringify({
           msg: 'restart', game: 'xor',
-          phenotype: current_game.population[ws.assigned_individual_idx].phenotype
+          phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
         }))
       }
 
     } else if (object.status === 'round check' && object.inputs) {
-      const res = current_game.population[ws.assigned_individual_idx].neural_process(object.inputs)
+      const res = current_game.population.neural_process(ws.assigned_individual_idx, object.inputs)
       ws.send(JSON.stringify({ result: res }))
 
     } else if (object.status === 'finished') {
+      // TODO: add a current_best_fitness
       const fitness = object.fitness
       current_game.number_finished_game++
-      current_game.population[ws.assigned_individual_idx].finalFitness = fitness
+      current_game.population.set_fitness(ws.assigned_individual_idx, fitness)
 
       if (current_game.best_fitness_score === null || current_game.best_fitness_score < fitness) {
         current_game.best_fitness_score = fitness
@@ -114,7 +99,7 @@ export default (current_game, ws, object) => {
       if (assign_idx(current_game, ws)) {
         ws.send(JSON.stringify({
           msg: 'restart', game: 'xor',
-          phenotype: current_game.population[ws.assigned_individual_idx].phenotype
+          phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
         }))
       }
     }

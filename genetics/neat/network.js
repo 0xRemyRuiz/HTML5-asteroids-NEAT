@@ -421,11 +421,9 @@ export default class Network {
     }
   }
 
-
-  // TODO TODO TODO
   // think function executes the thinking process and returns output values
-  think() {
-
+  think(inputs) {
+    // TOTOTODO
   }
 }
 

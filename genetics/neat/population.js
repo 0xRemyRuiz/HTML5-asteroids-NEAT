@@ -608,4 +608,9 @@ export default class Population {
     // TODO: concat input+bias+genotype+output
     return this.#networks[network_idx].get_phenotype()
   }
+
+  neural_process(network_idx, inputs) {
+    // TODO: eventually test for errors
+    return this.#networks[network_idx].think(inputs)
+  }
 }
