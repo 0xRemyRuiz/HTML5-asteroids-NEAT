@@ -111,11 +111,13 @@ export default class Population {
 
       // CONNECTION MUTATE
       if (Math.random() <= 0.6) {
+        console.log('mutate weight')
         curr_network.mutate_weight()
       }
 
       // CONNECTION ADD
       if (Math.random() <= 0.4) {
+        console.log('mutate connection add')
         // TOOD: check if bias should be included here or only below
         // mutate connection add
         const candidate_connection = curr_network.get_candidate_connection()
@@ -135,6 +137,7 @@ export default class Population {
       // NOTE: in this algorithimic order, a freshly created connection might get immediately split, it's an expected behavior
       // NODE ADD
       if (Math.random() <= 0.2) {
+        console.log('mutate node add')
         // TODO: try to refactor here
         const candidate_connection = curr_network.get_random_connection()
         // if there is at least one viable candidate to be split
@@ -151,11 +154,14 @@ export default class Population {
         }
       }
 
-      // MUTATE node function
+      // NODE MUTATE
 
       // don't forget to update the helper elements
       curr_network.update_insights()
+      console.log('done mutating...keep going')
     }
+    console.log('WTF MAN?????')
+    console.log('mutation occured sorted nodes are:', curr_network.get_blob().sorted_nodes)
   }
 
   #create_new_specie(representative) {
@@ -216,6 +222,7 @@ export default class Population {
       if (base == target) {
         continue
       }
+      // TODO: parametrize this
       if (this.#calculate_delta(base, target) < 3) {
         // if current fitness of the network is better, reset stagnation countdown
         if (specie.best_fitness < network_fitness) {
@@ -380,11 +387,6 @@ export default class Population {
     }
   }
 
-  // DEBUG ONLY
-  test_speciation() {
-    // TODO
-  }
-
   test_mutation_on_network(network_idx) {
     this.#mutate_network_by_id(network_idx)
     return this.#networks[network_idx]
@@ -443,6 +445,7 @@ export default class Population {
       }
       adam = new Network(this.#input_nodes, this.#output_nodes, {}, connections)
     }
+
     const rnd_network = Math.floor(Math.random() * this.#pop_size)
     const members = []
     for (let i = this.#pop_size - 1; i >= 0; i--) {
@@ -451,28 +454,32 @@ export default class Population {
       // add to the pool
       this.#networks.push(new_network)
       // mutate the network
+      console.log('####INIT: mutating new network')
       this.#mutate_network_by_id(this.#networks.length - 1)
       // add the new network to the original specie
+      console.log('####INIT: pushing new network')
       members.push(new_network)
       if (rnd_network === i) {
         // pick a random network and create specie from it
         this.#create_new_specie(this.#networks[this.#networks.length - 1])
+        console.log('####INIT: creating specie of reference with random network', this.#networks[this.#networks.length - 1])
       }
     }
     this.#species[0].members = members
+    console.log('####INIT: done')
   }
 
   breed_new_population() {
     // DEBUG
-      const chain_mutate = (network_id, iteration) => {
-        for (let i = 0; i < iteration; i++) {
-          this.#mutate_network_by_id(network_id)
-        }
-      }
-      for (let k in this.#networks) {
-        // chain_mutate(k, 3)
-        this.#networks[k].set_fitness(Math.random() * 50 + 1)
-      }
+      // const chain_mutate = (network_id, iteration) => {
+      //   for (let i = 0; i < iteration; i++) {
+      //     this.#mutate_network_by_id(network_id)
+      //   }
+      // }
+      // for (let k in this.#networks) {
+      //   chain_mutate(k, 30)
+      //   this.#networks[k].set_fitness(Math.random() * 50 + 1)
+      // }
     // !DEBUG
 
     const old_networks = this.#networks
@@ -500,12 +507,12 @@ export default class Population {
     // 3. Remove stagnant species
     let global_adjusted_fitness = 0
     let current_total_networks = 0
-    let removed_members = 0
     for (let i = 0; i < this.#species.length; i++) {
       const specie = this.#species[i]
       specie.stagnation_countdown--
       // TODO: parametrize minimum size of specie
-      if (specie.stagnation_countdown > 0 && specie.members.length > 1) {
+      if ((specie.stagnation_countdown > 0 && specie.members.length > 1)
+          || this.#species.length === 1) {
         // 4. Share fitness (explicit fitness sharing)
         specie.total_adjusted_fitness = 0
         // calculate adjusted fitness
@@ -518,10 +525,10 @@ export default class Population {
         current_total_networks += N
         specie.best_fitness = specie.members[0].get_fitness()
 
+      // if the specie is stagnating or have too few members in it
+      // and if there is more than one specie left, prune it
       } else {
-        removed_members += specie.members.length
-        this.#species.splice(i, 1)
-        i--
+        this.#species.splice(i--, 1)
       }
     }
 
@@ -588,29 +595,10 @@ export default class Population {
   }
 
   get_phenotype(network_idx) {
-    // Expected minimal structure of phenotype for visualization
-    // {
-    //   specie: 'stringExample',                                     // specie:        string
-    //   nodes: {                                                     // nodes:         object
-    //     0: {layer: 0},                                             // node:          object
-    //     2: {layer: 1},
-    //     1: {layer: 2},
-    //   },
-    //   connections: {                                               // connections:   object
-    //     2: {from: 0, to: 2, innov: 2, enabled: true, weight: 1.2}, // connection:    object
-    //     5: {from: 0, to: 1, innov: 5, enabled: false, weight: 0.7},
-    //     3: {from: 2, to: 1, innov: 3, enabled: true, weight: 0.7},
-    //   },
-    //   sorted_nodes: [0, 1, 2]                                      // sorted_nodes:  array
-    // }
-
-    // const base_phenotype = this.#networks[network_idx].get_phenotype()
-    // TODO: concat input+bias+genotype+output
     return this.#networks[network_idx].get_phenotype()
   }
 
   neural_process(network_idx, inputs) {
-    // TODO: eventually test for errors
     return this.#networks[network_idx].think(inputs)
   }
 }

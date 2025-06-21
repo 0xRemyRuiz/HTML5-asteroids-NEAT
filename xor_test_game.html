@@ -50,15 +50,16 @@
     const onmessage = (event) => {
       try {
         const parsedData = JSON.parse(event.data)
+        console.log(parsedData)
 
         if (parsedData.msg === 'who are you' || parsedData.msg === 'game change' || parsedData.msg === 'start') {
           if (parsedData.subject) {
             current_game = parsedData.subject
           }
           webSocketInstance.send(JSON.stringify({ msg: 'game', game: 'xor' }))
+          return
 
         } else if (parsedData.msg === 'restart' && parsedData.phenotype) {
-          // console.log('Received restart', current_game, parsedData)
           if (current_game !== 'xor' && parsedData.game !== 'xor') {
             return
           }
@@ -73,7 +74,6 @@
           game.round = 0
           $xor_results.html('Results: ')
           // webSocketInstance.send(JSON.stringify({ status: 'started' }))
-
         }
 
         if (game.on) {

@@ -35,6 +35,7 @@ wss.on('connection', (ws) => {
   ws.is_master = false
   ws.last_order = null
   ws.assigned_individual_idx = null
+  ws.client_connected = false
 
   ws.send(JSON.stringify({ msg: 'who are you' }))
 
@@ -66,10 +67,14 @@ wss.on('connection', (ws) => {
 
       if (!ws.is_master && object.msg === 'game') {
         if (ws.game !== null && ws.game === current_game.name) {
-          ws.id = current_game.ccid
-          current_game.ccid++
-          current_game.client_connected++
+          if (!ws.client_connected) {
+            ws.client_connected = true
+            ws.id = current_game.ccid
+            current_game.ccid++
+            current_game.client_connected++
+          }
         } else {
+          ws.client_connected = false
           ws.id = -1
         }
       }
@@ -94,6 +99,7 @@ wss.on('connection', (ws) => {
 
         // Master controller wants to initialize new learning process
         if (current_game.status === 'init') {
+          current_game.status = 'initialization'
           if (current_game.name === 'xor') {
             xor(current_game, null, null)
           } else if (current_game.name === 'asteroids') {

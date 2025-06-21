@@ -9,6 +9,7 @@ export default class Network {
   #input_nodes
   #output_nodes
   #hidden_nodes = {}
+  #nodes = {}
   #specie
   // n is the total number of hidden nodes
   #n = 0
@@ -31,6 +32,7 @@ export default class Network {
   #layers = []
   // simple connection hash map for fast check (like a dict of array in python)
   #connection_set = {}
+  #incoming_connections = {}
   // available connections computed from layers
   #available_connections = {}
 
@@ -48,6 +50,11 @@ export default class Network {
       this.#connection_set[conn.from] = []
     }
     this.#connection_set[conn.from].push(conn.to)
+    if (this.#incoming_connections[conn.to] === undefined) {
+      // TODO: check if Set is better here than an array
+      this.#incoming_connections[conn.to] = new Set()
+    }
+    this.#incoming_connections[conn.to].add(conn.innov)
     return this.#connections[conn.innov]
   }
 
@@ -62,16 +69,7 @@ export default class Network {
       this.#n++
     }
     for (let k in connections) {
-      this.#connections[k] = connections[k].get_copy()
-      this.#c++
-      if (!this.#connections[k].is_enabled()) {
-        this.#disabled_connections++
-      }
-      const conn = this.#connections[k].get()
-      if (this.#connection_set[conn.from] === undefined) {
-        this.#connection_set[conn.from] = []
-      }
-      this.#connection_set[conn.from].push(conn.to)
+      this.#add_new_connection(connections[k].get_copy())
     }
     // topologically sort the nodes then generate layers then generate available connection hash map
     this.update_insights()
@@ -101,6 +99,7 @@ export default class Network {
   */
   set_fitness(fitness, m) {
     // Idea is set aside for the moment
+    // const m = this.#input_nodes.length + this.#output_nodes.length
     // this.#fitness = score * (1 + m / (m + this.#n))
     this.#fitness = fitness
   }
@@ -277,15 +276,6 @@ export default class Network {
     return false
   }
 
-  // add_node(node) {
-  //   if (this.#hidden_nodes[node.get_id()] === undefined) {
-  //     this.#hidden_nodes[node.get_id()] = node.get_copy()
-  //     this.#n++
-  //     return true
-  //   }
-  //   return false
-  // }
-
   add_connection(connection) {
     const conn = connection.get()
     const available_conn = this.#available_connections[conn.from]
@@ -345,8 +335,7 @@ export default class Network {
     // STEP 2
     // once the topological order has been computed, we compute per layer order (layers is an array of arrays)
     const node_to_layer = {}
-    const layers = {}
-
+    const tmp_layers = {}
     for (const node_id of this.#sorted_nodes) {
       // skip output nodes
       if (this.#output_nodes[node_id]) {
@@ -364,10 +353,10 @@ export default class Network {
       const layer = incoming_layers.length > 0 ? Math.max(...incoming_layers) + 1 : 0
       node_to_layer[node_id] = layer
 
-      if (!layers[layer]) {
-        layers[layer] = []
+      if (!tmp_layers[layer]) {
+        tmp_layers[layer] = []
       }
-      layers[layer].push(node_id)
+      tmp_layers[layer].push(node_id)
     }
 
     // Convert layers object to ordered array
@@ -375,9 +364,8 @@ export default class Network {
     // const result = [];
     // const sortedLayerIndices = Object.keys(layers).map(Number).sort((a, b) => a - b);
     // for (const index of sortedLayerIndices) {
-    //   result.push(layers[index]);
+    //   result.push(tmp_layers[index]);
     // }
-    // I mean...counting from 0 to x is waaaaayyyyy better...
 
     // console.log("BEFORE LAYERS", this.#layers)
     this.#layers = []
@@ -385,10 +373,10 @@ export default class Network {
     this.#layers.push(Object.keys(this.#input_nodes).map((s) => parseInt(s)))
     // add hidden nodes
     let idx = 0
-    for (let k in layers) {
+    for (let k in tmp_layers) {
       if (idx !== 0) {
         // skip index zero, we add input nodes afterward since they could be not connected
-        this.#layers.push(layers[idx.toString()])
+        this.#layers.push(tmp_layers[idx.toString()])
       }
       idx++
     }
@@ -419,11 +407,40 @@ export default class Network {
         }
       }
     }
+
+    this.#nodes = {}
+    Object.assign(this.#nodes, this.#input_nodes)
+    Object.assign(this.#nodes, this.#hidden_nodes)
+    Object.assign(this.#nodes, this.#output_nodes)
   }
 
   // think function executes the thinking process and returns output values
   think(inputs) {
-    // TOTOTODO
+    console.log('thinking... base on output nodes:', this.#output_nodes, 'based on', this.#sorted_nodes)
+    const output = []
+    const l = this.#sorted_nodes.length
+    for (let i = 0; i < l; i++) {
+      const node = this.#nodes[this.#sorted_nodes[i]]
+      console.log('doing shit... i=', i, 'node=', node)
+      if (node.get_type() === 'input') {
+        continue
+      }
+      let current_value = 0
+      for (const conn of this.#incoming_connections[this.#sorted_nodes[i]]) {
+        if (conn.is_enabled()) {
+          const origin_node = this.#nodes[conn.get_from()]
+          if (origin_node.get_type() === 'input') {
+            // the reference index is the node id - 1 because node 0 is always the bias node
+            current_value += conn.get_weight() * inputs[origin_node.get_id() - 1]
+          } else {
+            current_value += conn.get_weight() * origin_node.value
+          }
+        }
+      }
+      node.activate(current_value)
+    }
+    console.log('thinking FINISHED... base on output nodes:', this.#output_nodes, 'and output is:', output)
+    return output
   }
 }
 

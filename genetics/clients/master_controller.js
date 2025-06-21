@@ -51,21 +51,26 @@ export default (wss, current_game, ws, object) => {
         code = 'error'
 
       } else {
-        current_game.generation_number = 0
         current_game.status = 'init'
       }
       response = 'Initialization processed'
       code = 'info'
 
     } else if (object.command === 'run') {
-      if (current_game.status !== 'ready') {
-        response = 'ERROR: command run failed, you need to "init" after a "change [game]"'
-        code = 'error'
+      if (current_game.status === 'run') {
+        response = 'game is already running'
+        code = 'info'
+
+      } else {
+        if (current_game.status !== 'ready') {
+          response = 'ERROR: command run failed, you need to "init" after a "change [game]"'
+          code = 'error'
+        }
+        current_game.status = 'running'
+        wss.clients.forEach((client) => {
+          client.send(JSON.stringify({ msg: 'start' }))
+        })
       }
-      current_game.status = 'running'
-      wss.clients.forEach((client) => {
-        client.send(JSON.stringify({ msg: 'start' }))
-      })
 
     } else {
       response = 'ERROR: command not found, type "list" to get the command list'

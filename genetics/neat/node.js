@@ -60,8 +60,8 @@ export default class Node {
   }
 
   // neuron activation based on current public value
-  activate() {
-    return this.#activation_func(this.value)
+  activate(input_value) {
+    this.value = this.#activation_func(input_value)
   }
 
   get_type() {

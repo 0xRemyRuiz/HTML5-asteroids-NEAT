@@ -19,20 +19,8 @@ export default class Connection {
     this.#enabled = enabled
   }
 
-  toggle_enable() {
-    this.#enabled = !this.#enabled
-  }
-
-  disable() {
-    this.#enabled = false
-  }
-
-  is_enabled() {
-    return !!this.#enabled
-  }
-
-  change_weight(weight = Math.random()) {
-    this.#weight = weight
+  get_copy() {
+    return new Connection(this.#innov, this.#from, this.#to, this.#weight, this.#enabled)
   }
 
   get() {
@@ -45,15 +33,31 @@ export default class Connection {
     }
   }
 
-  get_copy() {
-    return new Connection(this.#innov, this.#from, this.#to, this.#weight, this.#enabled)
+  get_innov() {
+    return this.#innov
+  }
+
+  get_from() {
+    return parseInt(this.#from)
+  }
+
+  get_to() {
+    return parseInt(this.#to)
   }
 
   get_weight() {
     return this.#weight
   }
 
-  get_innov() {
-    return this.#innov
+  is_enabled() {
+    return !!this.#enabled
+  }
+
+  disable() {
+    this.#enabled = false
+  }
+
+  change_weight(weight = Math.random()) {
+    this.#weight = weight
   }
 }

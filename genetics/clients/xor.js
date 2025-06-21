@@ -1,5 +1,5 @@
 
-import {Population} from '../neat/population.js'
+import Population from '../neat/population.js'
 import {config} from '../neat/neat.js'
 
 // Algorithm
@@ -40,7 +40,7 @@ const assign_idx = (current_game, ws) => {
     delete current_game.available_individuals[k]
     return true
   }
-  if (current_game.pop_idx < current_game.population.length) {
+  if (current_game.pop_idx < current_game.population_size) {
     ws.assigned_individual_idx = current_game.pop_idx++
   } else {
     return false
@@ -52,55 +52,61 @@ export default (current_game, ws, object) => {
   // initialize hack
   if (ws === null) {
     current_game.generation_number = 0
-    current_game.population = new Population(current_game.population.length)
+    current_game.pop_idx = 0
+    current_game.population_size = 15
+    current_game.population = new Population(15)
     current_game.population.create_new_node('ident', 'input')
     current_game.population.create_new_node('ident', 'input')
     current_game.population.create_new_node('sigmoid', 'output')
     current_game.population.initialize()
-    return
-  }
+    console.log('init done!')
 
-  // if the game is running but the current population index is the total population, breed new generation
-  if (current_game.status === 'running'
-    && current_game.pop_idx === current_game.population.length) {
-    let no_individual = true
-    for (let k in current_game.available_individuals) {no_individual = false}
+  } else {
+    // if the game is running but the current population index is the total population, breed new generation
+    if (current_game.status === 'running'
+      && current_game.pop_idx === current_game.population_size) {
+      let no_individual = true
+      for (let k in current_game.available_individuals) {no_individual = false}
 
-    if (no_individual) {
-      // TODO: parse through final fitness score then process to breed new generation
-      current_game.generation_number++
-      current_game.population.breed_new_population()
+      if (no_individual) {
+        // TODO: parse through final fitness score then process to breed new generation
+        current_game.generation_number++
+        current_game.pop_idx = 0
+        current_game.population.breed_new_population()
+      }
     }
-  }
 
-  if (current_game.status === 'running') {
-    if (object.msg === 'game') {
-      if (assign_idx(current_game, ws)) {
-        ws.send(JSON.stringify({
-          msg: 'restart', game: 'xor',
-          phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
-        }))
-      }
+    if (current_game.status === 'running') {
+      if (object.msg === 'game') {
+        if (assign_idx(current_game, ws)) {
+          ws.send(JSON.stringify({
+            msg: 'restart', game: 'xor',
+            phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
+          }))
+        }
 
-    } else if (object.status === 'round check' && object.inputs) {
-      const res = current_game.population.neural_process(ws.assigned_individual_idx, object.inputs)
-      ws.send(JSON.stringify({ result: res }))
+      } else if (object.status === 'round check' && object.inputs) {
+        console.log('-----Neural process with ', ws.assigned_individual_idx, object.inputs)
+        const res = current_game.population.neural_process(ws.assigned_individual_idx, object.inputs)
+        console.log('---------Now the result:', res)
+        ws.send(JSON.stringify({ result: res }))
 
-    } else if (object.status === 'finished') {
-      // TODO: add a current_best_fitness
-      const fitness = object.fitness
-      current_game.number_finished_game++
-      current_game.population.set_fitness(ws.assigned_individual_idx, fitness)
+      } else if (object.status === 'finished') {
+        // TODO: add a current_best_fitness
+        const fitness = object.fitness
+        current_game.number_finished_game++
+        current_game.population.set_fitness(ws.assigned_individual_idx, fitness)
 
-      if (current_game.best_fitness_score === null || current_game.best_fitness_score < fitness) {
-        current_game.best_fitness_score = fitness
-      }
+        if (current_game.best_fitness_score === null || current_game.best_fitness_score < fitness) {
+          current_game.best_fitness_score = fitness
+        }
 
-      if (assign_idx(current_game, ws)) {
-        ws.send(JSON.stringify({
-          msg: 'restart', game: 'xor',
-          phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
-        }))
+        if (assign_idx(current_game, ws)) {
+          ws.send(JSON.stringify({
+            msg: 'restart', game: 'xor',
+            phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
+          }))
+        }
       }
     }
   }
