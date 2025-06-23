@@ -1,6 +1,8 @@
 import Node from './node.js'
 import Connection from './connection.js'
 
+import prng from '../libs/prng.js'
+
 export default class Network {
   /*
    * Internal properties
@@ -43,18 +45,22 @@ export default class Network {
     const conn = connection.get()
     this.#connections[conn.innov] = connection
     this.#c++
+
     if (!this.#connections[conn.innov].is_enabled()) {
       this.#disabled_connections++
     }
+
     if (this.#connection_set[conn.from] === undefined) {
       this.#connection_set[conn.from] = []
     }
     this.#connection_set[conn.from].push(conn.to)
+
     if (this.#incoming_connections[conn.to] === undefined) {
       // TODO: check if Set is better here than an array
       this.#incoming_connections[conn.to] = new Set()
     }
     this.#incoming_connections[conn.to].add(conn.innov)
+
     return this.#connections[conn.innov]
   }
 
@@ -102,7 +108,7 @@ export default class Network {
     // const m = this.#input_nodes.length + this.#output_nodes.length
     // this.#fitness = score * (1 + m / (m + this.#n))
     this.#fitness = fitness
-  }
+  } 
 
   get_phenotype() {
     const get_objects = (obj) => {
@@ -186,10 +192,10 @@ export default class Network {
     if (size === 0) {
       return undefined
     }
-    let rnd_countdown = Math.floor(Math.random() * size)
+    let rnd_countdown = Math.floor(prng.do.random() * size)
     for (let from in this.#available_connections) {
       if (rnd_countdown <= 0) {
-        return [from, Math.floor(Math.random() * this.#available_connections[from].length)]
+        return [from, Math.floor(prng.do.random() * this.#available_connections[from].length)]
       }
       rnd_countdown--
     }
@@ -198,7 +204,7 @@ export default class Network {
 
   get_random_connection() {
     if (this.#c > 0) {
-      let rnd = Math.floor(Math.random() * (this.#c - this.#disabled_connections))
+      let rnd = Math.floor(prng.do.random() * (this.#c - this.#disabled_connections))
       for (let k in this.#connections) {
         // ignore disabled connections
         if (this.#connections[k].is_enabled()) {
@@ -214,7 +220,7 @@ export default class Network {
 
   get_random_node() {
     if (this.#n > 0) {
-      let rnd = Math.floor(Math.random() * this.#n)
+      let rnd = Math.floor(prng.do.random() * this.#n)
       for (let k in this.#hidden_nodes) {
         if (rnd <= 0) {
           return this.#hidden_nodes[k]
@@ -416,30 +422,36 @@ export default class Network {
 
   // think function executes the thinking process and returns output values
   think(inputs) {
-    console.log('thinking... base on output nodes:', this.#output_nodes, 'based on', this.#sorted_nodes)
     const output = []
     const l = this.#sorted_nodes.length
     for (let i = 0; i < l; i++) {
       const node = this.#nodes[this.#sorted_nodes[i]]
-      console.log('doing shit... i=', i, 'node=', node)
       if (node.get_type() === 'input') {
         continue
       }
-      let current_value = 0
-      for (const conn of this.#incoming_connections[this.#sorted_nodes[i]]) {
-        if (conn.is_enabled()) {
-          const origin_node = this.#nodes[conn.get_from()]
-          if (origin_node.get_type() === 'input') {
-            // the reference index is the node id - 1 because node 0 is always the bias node
-            current_value += conn.get_weight() * inputs[origin_node.get_id() - 1]
-          } else {
-            current_value += conn.get_weight() * origin_node.value
+
+      const incomings = this.#incoming_connections[this.#sorted_nodes[i]]
+      if (incomings) {
+        let current_value = 0
+        incomings.forEach((conn) => {
+          const connection = this.#connections[conn]
+          if (connection.is_enabled()) {
+            const origin_node = this.#nodes[connection.get_from()]
+            if (origin_node.get_type() === 'input') {
+              // the reference index is the node id - 1 because node 0 is always the bias node
+              current_value += connection.get_weight() * inputs[origin_node.get_id() - 1]
+            } else {
+              current_value += connection.get_weight() * origin_node.value
+            }
           }
+        })
+        node.activate(current_value)
+        if (node.get_type() === 'output') {
+          output.push(node.value > 0.5 ? 1 : 0)
         }
       }
-      node.activate(current_value)
     }
-    console.log('thinking FINISHED... base on output nodes:', this.#output_nodes, 'and output is:', output)
+
     return output
   }
 }

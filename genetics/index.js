@@ -22,6 +22,7 @@ const current_game = {
   game_order: null,
   client_connected: 0,
   generation_number: null,
+  generation_limit : -1,
   best_fitness_score: null,
   number_finished_game: null,
   population: null,
@@ -109,6 +110,8 @@ wss.on('connection', (ws) => {
         }
       }
 
-    } catch (e) {}
+    } catch (e) {
+      console.error(e)
+    }
   })
 })

@@ -4,6 +4,8 @@ import Network from './network.js'
 import Node from './node.js'
 import Connection from './connection.js'
 
+import prng from '../libs/prng.js'
+
 // TODO: eventually refactor and globalize this utility function
 // check function has similar behavior than compareFn from sort builtin function
 // ascending order : check = (arr, idx, el) => arr[idx] - el or (arr, idx, el) => arr[idx] > el
@@ -29,7 +31,7 @@ function insert_into(arr, el, check) {
   return mid
 }
 
-// this function returns an array containing probabilites to be run against Math.random()
+// this function returns an array containing probabilites to be run against prng.do.random()
 // this allows to increase the probability to get the first elements of the array
 function log_distribution(length) {
   const proba = [];
@@ -105,63 +107,59 @@ export default class Population {
 
   #mutate_network_by_id(network_idx) {
     // TODO: parametrize from config  'mutation_chance'
-    if (Math.random() <= 1) {
-      // TODO: parametrize from config  'mutation_rates': [0.5, 0.3, 0.2],
-      const curr_network = this.#networks[network_idx]
-
-      // CONNECTION MUTATE
-      if (Math.random() <= 0.6) {
-        console.log('mutate weight')
-        curr_network.mutate_weight()
-      }
-
-      // CONNECTION ADD
-      if (Math.random() <= 0.4) {
-        console.log('mutate connection add')
-        // TOOD: check if bias should be included here or only below
-        // mutate connection add
-        const candidate_connection = curr_network.get_candidate_connection()
-        // did we find a viable candidate?
-        if (candidate_connection !== undefined) {
-          // TODO: maybe parametrize the random weight selection
-          curr_network.add_connection(this.#create_new_connection(candidate_connection[0], candidate_connection[1], Math.random()))
-        }
-      }
-
-      /* From NEAT 2nd paper
-         -------------------
-         "The old connection is disabled and two new connections are added to the genome.
-          The new connection leading into the new node receives a weight of 1, and the new
-          connection leading out receives the same weight as the old connection."
-       */
-      // NOTE: in this algorithimic order, a freshly created connection might get immediately split, it's an expected behavior
-      // NODE ADD
-      if (Math.random() <= 0.2) {
-        console.log('mutate node add')
-        // TODO: try to refactor here
-        const candidate_connection = curr_network.get_random_connection()
-        // if there is at least one viable candidate to be split
-        if (candidate_connection !== undefined) {
-          // create the node
-          const parent_conn = candidate_connection.get()
-          const new_node_id = this.create_new_node('sigmoid', 'hidden', parent_conn.innov)
-
-          // create first connection with weight = 1
-          const conn1 = this.#create_new_connection(parent_conn.from, new_node_id)
-          // create second connection with the weight from the old connection
-          const conn2 = this.#create_new_connection(new_node_id, parent_conn.to, parent_conn.weight)
-          curr_network.add_node(this.#nodes[new_node_id], parent_conn, conn1, conn2)
-        }
-      }
-
-      // NODE MUTATE
-
-      // don't forget to update the helper elements
-      curr_network.update_insights()
-      console.log('done mutating...keep going')
+    if (prng.do.random() > 1) {
+      return
     }
-    console.log('WTF MAN?????')
-    console.log('mutation occured sorted nodes are:', curr_network.get_blob().sorted_nodes)
+
+    // TODO: parametrize from config  'mutation_rates': [0.5, 0.3, 0.2],
+    const curr_network = this.#networks[network_idx]
+
+    // CONNECTION MUTATE
+    if (prng.do.random() <= 0.6) {
+      curr_network.mutate_weight()
+    }
+
+    // CONNECTION ADD
+    if (prng.do.random() <= 0.4) {
+      // TOOD: check if bias should be included here or only below
+      // mutate connection add
+      const candidate_connection = curr_network.get_candidate_connection()
+      // did we find a viable candidate?
+      if (candidate_connection !== undefined) {
+        // TODO: maybe parametrize the random weight selection
+        curr_network.add_connection(this.#create_new_connection(candidate_connection[0], candidate_connection[1], prng.do.random()))
+      }
+    }
+
+    /* From NEAT 2nd paper
+       -------------------
+       "The old connection is disabled and two new connections are added to the genome.
+        The new connection leading into the new node receives a weight of 1, and the new
+        connection leading out receives the same weight as the old connection."
+     */
+    // NOTE: in this algorithimic order, a freshly created connection might get immediately split, it's an expected behavior
+    // NODE ADD
+    if (prng.do.random() <= 0.2) {
+      // TODO: try to refactor here
+      const candidate_connection = curr_network.get_random_connection()
+      // if there is at least one viable candidate to be split
+      if (candidate_connection !== undefined) {
+        // create the node
+        const parent_conn = candidate_connection.get()
+        const new_node_id = this.create_new_node('sigmoid', 'hidden', parent_conn.innov)
+
+        // create first connection with weight = 1
+        const conn1 = this.#create_new_connection(parent_conn.from, new_node_id)
+        // create second connection with the weight from the old connection
+        const conn2 = this.#create_new_connection(new_node_id, parent_conn.to, parent_conn.weight)
+        curr_network.add_node(this.#nodes[new_node_id], parent_conn, conn1, conn2)
+      }
+    }
+
+    // NODE MUTATE
+
+    // don't forget to update the helper elements
+    curr_network.update_insights()
   }
 
   #create_new_specie(representative) {
@@ -248,7 +246,7 @@ export default class Population {
   #reproduce(parent1, parent2, decimal_check = 1) {
     // local utility functions
     function get_rand(e1, e2) {
-      return Math.random() * 2 < 1 ? e1 : e2
+      return prng.do.random() * 2 < 1 ? e1 : e2
     }
     // there is a huge side effect out of setting nodes from connection gene
     // it's that later genes crush the earlier ones, I'm not sure of the impact of this innovation
@@ -344,7 +342,7 @@ export default class Population {
   /*
    * Public methods
    */
-  constructor(pop_size = 15) {
+  constructor(pop_size = 50) {
     // TODO: parametrize this
     this.#pop_size = pop_size
     this.#input_nodes[this.#node_uid] = new Node(this.#node_uid, 'ident', activation['ident'], 'bias')
@@ -446,27 +444,24 @@ export default class Population {
       adam = new Network(this.#input_nodes, this.#output_nodes, {}, connections)
     }
 
-    const rnd_network = Math.floor(Math.random() * this.#pop_size)
+    const rnd_network = Math.floor(prng.do.random() * this.#pop_size)
     const members = []
     for (let i = this.#pop_size - 1; i >= 0; i--) {
       // TODO: maybe improve this code
       const new_network = adam.get_copy()
+      new_network.set_specie(0)
       // add to the pool
       this.#networks.push(new_network)
       // mutate the network
-      console.log('####INIT: mutating new network')
       this.#mutate_network_by_id(this.#networks.length - 1)
       // add the new network to the original specie
-      console.log('####INIT: pushing new network')
       members.push(new_network)
       if (rnd_network === i) {
         // pick a random network and create specie from it
         this.#create_new_specie(this.#networks[this.#networks.length - 1])
-        console.log('####INIT: creating specie of reference with random network', this.#networks[this.#networks.length - 1])
       }
     }
     this.#species[0].members = members
-    console.log('####INIT: done')
   }
 
   breed_new_population() {
@@ -478,7 +473,7 @@ export default class Population {
       // }
       // for (let k in this.#networks) {
       //   chain_mutate(k, 30)
-      //   this.#networks[k].set_fitness(Math.random() * 50 + 1)
+      //   this.#networks[k].set_fitness(prng.do.random() * 50 + 1)
       // }
     // !DEBUG
 
@@ -518,6 +513,7 @@ export default class Population {
         // calculate adjusted fitness
         const N = specie.members.length
         for (let j in specie.members) {
+          specie.members[j].set_specie(specie.id)
           const adjusted_fitness = specie.members[j].set_adjusted_fitness(N)
           specie.total_adjusted_fitness += adjusted_fitness
           global_adjusted_fitness += adjusted_fitness
@@ -570,7 +566,8 @@ export default class Population {
         specie.offspring_target += this.#pop_size - current_pop
       }
       // TODO: parametrize the decimal check size
-      const decimal_check = 10 ** Math.floor(Math.round(specie.members[0].get_fitness()).toString().length * 0.2)
+      // const decimal_check = 10 ** Math.floor(Math.round(specie.members[0].get_fitness()).toString().length * 0.2)
+      const decimal_check = 1
       // select elites
       // 6. Elitism: preserve top genome from each species
       this.#networks = this.#networks.concat(elites)
@@ -578,10 +575,11 @@ export default class Population {
       // 7. Reproduce: crossover or mutation
       const len = specie.members.length
       while (specie.offspring_target-- > 0) {
-        const parent1 = specie.members[Math.floor(Math.random() * len)]
-        const parent2 = specie.members[Math.floor(Math.random() * len)]
+        const parent1 = specie.members[Math.floor(prng.do.random() * len)]
+        const parent2 = specie.members[Math.floor(prng.do.random() * len)]
         this.#networks.push(this.#reproduce(parent1, parent2, decimal_check))
         this.#mutate_network_by_id(this.#networks.length - 1)
+        this.#networks[this.#networks.length - 1].set_specie(specie.id)
       }
     }
   }
@@ -595,7 +593,10 @@ export default class Population {
   }
 
   get_phenotype(network_idx) {
-    return this.#networks[network_idx].get_phenotype()
+    return {
+      specie: this.#networks[network_idx].get_specie(),
+      phenotype: this.#networks[network_idx].get_phenotype(),
+    }
   }
 
   neural_process(network_idx, inputs) {

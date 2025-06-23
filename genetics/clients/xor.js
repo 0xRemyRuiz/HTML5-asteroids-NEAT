@@ -59,7 +59,6 @@ export default (current_game, ws, object) => {
     current_game.population.create_new_node('ident', 'input')
     current_game.population.create_new_node('sigmoid', 'output')
     current_game.population.initialize()
-    console.log('init done!')
 
   } else {
     // if the game is running but the current population index is the total population, breed new generation
@@ -71,6 +70,9 @@ export default (current_game, ws, object) => {
       if (no_individual) {
         // TODO: parse through final fitness score then process to breed new generation
         current_game.generation_number++
+        if (current_game.generation_limit > 0 && current_game.generation_limit <= current_game.generation_number) {
+          current_game.status = 'finished'
+        }
         current_game.pop_idx = 0
         current_game.population.breed_new_population()
       }
@@ -79,16 +81,14 @@ export default (current_game, ws, object) => {
     if (current_game.status === 'running') {
       if (object.msg === 'game') {
         if (assign_idx(current_game, ws)) {
-          ws.send(JSON.stringify({
-            msg: 'restart', game: 'xor',
-            phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
-          }))
+          const message = {...current_game.population.get_phenotype(ws.assigned_individual_idx)}
+          message.msg = 'restart'
+          message.game = 'xor'
+          ws.send(JSON.stringify(message))
         }
 
       } else if (object.status === 'round check' && object.inputs) {
-        console.log('-----Neural process with ', ws.assigned_individual_idx, object.inputs)
         const res = current_game.population.neural_process(ws.assigned_individual_idx, object.inputs)
-        console.log('---------Now the result:', res)
         ws.send(JSON.stringify({ result: res }))
 
       } else if (object.status === 'finished') {
@@ -102,10 +102,10 @@ export default (current_game, ws, object) => {
         }
 
         if (assign_idx(current_game, ws)) {
-          ws.send(JSON.stringify({
-            msg: 'restart', game: 'xor',
-            phenotype: current_game.population.get_phenotype(ws.assigned_individual_idx)
-          }))
+          const message = {...current_game.population.get_phenotype(ws.assigned_individual_idx)}
+          message.msg = 'restart'
+          message.game = 'xor'
+          ws.send(JSON.stringify(message))
         }
       }
     }

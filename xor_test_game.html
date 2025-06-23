@@ -13,8 +13,9 @@
 </head>
 <body>
   <button id="no-websocket" onclick="addWebSocketListeners()">Connect to websocket</button>
+  <div><label for="pace">Set the pace (current = <span id="current_pace"></span>seconds between 2 requests)</label><input type="text" name="pace" id="pace_input"><button click="change_pace()">ok</button></div>
   <div id="xor-results">Results: </div>
-  <h3>Network visualization</h3>
+  <h3>Network visualization (specie: <span id="specie"></span>)</h3>
   <canvas id="network-visualization"></canvas>
   <script type="text/javascript" src="commons/controls.js"></script>
   <script type="text/javascript" src="commons/network_visual.js"></script>
@@ -22,7 +23,7 @@
     WEBSOCKET_PORT = 3000
     var webSocketConnected = false, webSocketInstance = null, neural_network = null, $xor_results = null
 
-    let current_game = null, current_phenotype = null
+    let current_game = null, current_phenotype = null, current_pace = 5e3
     // XOR rounds with expected result
     const game_rounds = [
       [[0, 0], 0],
@@ -38,6 +39,15 @@
       inputs: null,
     }
 
+    function change_pace() {
+      console.log($('#pace_input'), $('#pace_input').val(), parseInt($('#pace_input').val()))
+      let new_pace = parseInt($('#pace_input').val())
+      if (!isNaN(new_pace)) {
+        current_pace = new_pace * 1e3
+        $('#pace_input').val('')
+      }
+    }
+
     const onopen = () => {
       if ($xor_results === null) {
         $xor_results = $('#xor-results')
@@ -45,6 +55,7 @@
       NETWORK_PANEL_SHOWN = true
       webSocketConnected = true
       $('#no-websocket').hide()
+      $('#current_pace').val(current_pace / 1e3)
     }
 
     const onmessage = (event) => {
@@ -66,6 +77,7 @@
 
           NETWORK_PANEL_SHOWN = true
           current_game = parsedData.game
+          $('#specie').html(parsedData.specie)
           current_phenotype = parsedData.phenotype
           resize_network_canva(parsedData.phenotype)
 
@@ -83,6 +95,10 @@
             game.results[game.round - 1] = result
             const result_li = `in: ${game_rounds[game.round - 1][0]} res: ${game.results[game.round - 1]} `
             $xor_results.html($xor_results.html()+result_li)
+
+          } else {
+            console.error('ERROR: result is not a number it is:', parsedData.result)
+            return
           }
 
           if (game.round >= game_rounds.length) {
@@ -91,15 +107,15 @@
             for (var i = 0; i < game.results.length; i++) {
               fitness += game.results[i] === game_rounds[i][1]
             }
-            $xor_results.html($xor_results.html()+' -> END')
+            $xor_results.html($xor_results.html()+' -> END SCORE= '+fitness)
             setTimeout(() => {
               webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
-            }, 5e3)
+            }, current_pace)
             // webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
 
           } else {
             game.inputs = game_rounds[game.round]
-            webSocketInstance.send(JSON.stringify({ status: 'round check', inputs: game.inputs }))
+            webSocketInstance.send(JSON.stringify({ status: 'round check', inputs: game.inputs[0] }))
           }
 
           game.round++
@@ -131,8 +147,11 @@
       webSocketInstance.addEventListener('close', removeWebSocketListeners)
     }
 
-    $(window).keydown(function (e) {
-      switch (KEY_CODES[e.keyCode]) {
+    $(window).keyup(function (e) {
+      // enter key is bound to change the pace only atm
+      // we need to check focus to change this behavior
+      if (e.keyCode == 13) {
+        change_pace()
       }
     })
   </script>

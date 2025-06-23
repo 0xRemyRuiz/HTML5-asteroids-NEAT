@@ -1,3 +1,5 @@
+import prng from '../libs/prng.js'
+
 export default class Connection {
   /*
    * Internal properties
@@ -57,7 +59,8 @@ export default class Connection {
     this.#enabled = false
   }
 
-  change_weight(weight = Math.random()) {
-    this.#weight = weight
+  change_weight() {
+    // TODO: parametrize this
+    this.#weight = prng.do.random() * (30 + 30) - 30
   }
 }
