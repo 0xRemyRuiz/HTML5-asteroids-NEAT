@@ -13,7 +13,7 @@
 </head>
 <body>
   <button id="no-websocket" onclick="addWebSocketListeners()">Connect to websocket</button>
-  <div><label for="pace">Set the pace (current = <span id="current_pace"></span>seconds between 2 requests)</label><input type="text" name="pace" id="pace_input"><button click="change_pace()">ok</button></div>
+  <div><label for="pace">Set the pace (current is <span id="current_pace">5</span>seconds between 2 requests)</label><input type="text" name="pace" id="pace_input"><button click="change_pace()">ok</button></div>
   <div id="xor-results">Results: </div>
   <h3>Network visualization (specie: <span id="specie"></span>)</h3>
   <canvas id="network-visualization"></canvas>
@@ -40,11 +40,11 @@
     }
 
     function change_pace() {
-      console.log($('#pace_input'), $('#pace_input').val(), parseInt($('#pace_input').val()))
       let new_pace = parseInt($('#pace_input').val())
       if (!isNaN(new_pace)) {
         current_pace = new_pace * 1e3
         $('#pace_input').val('')
+        $('#current_pace').html(new_pace.toString())
       }
     }
 
@@ -55,7 +55,6 @@
       NETWORK_PANEL_SHOWN = true
       webSocketConnected = true
       $('#no-websocket').hide()
-      $('#current_pace').val(current_pace / 1e3)
     }
 
     const onmessage = (event) => {
@@ -85,7 +84,6 @@
           game.results = []
           game.round = 0
           $xor_results.html('Results: ')
-          // webSocketInstance.send(JSON.stringify({ status: 'started' }))
         }
 
         if (game.on) {
@@ -95,10 +93,6 @@
             game.results[game.round - 1] = result
             const result_li = `in: ${game_rounds[game.round - 1][0]} res: ${game.results[game.round - 1]} `
             $xor_results.html($xor_results.html()+result_li)
-
-          } else {
-            console.error('ERROR: result is not a number it is:', parsedData.result)
-            return
           }
 
           if (game.round >= game_rounds.length) {
@@ -111,10 +105,10 @@
             setTimeout(() => {
               webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
             }, current_pace)
-            // webSocketInstance.send(JSON.stringify({ status: 'finished', fitness }))
 
           } else {
             game.inputs = game_rounds[game.round]
+            console.log('send round check')
             webSocketInstance.send(JSON.stringify({ status: 'round check', inputs: game.inputs[0] }))
           }
 

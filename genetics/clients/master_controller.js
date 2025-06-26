@@ -111,7 +111,7 @@ export default (wss, current_game, ws, object) => {
         code = 'info'
       }
 
-    } else if (object.command === 'set_generation_limit') {
+    } else if (object.command === 'sgl' || object.command === 'set_generation_limit') {
       const generation_limit = parseInt(object.subject)
       if (!isNaN(generation_limit)) {
         current_game.generation_limit = generation_limit

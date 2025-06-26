@@ -1,7 +1,12 @@
+
 import { WebSocketServer } from 'ws'
+import { cpus } from 'os'
+
 import xor from './clients/xor.js' 
 import asteroids from './clients/asteroids.js'
 import master_controller from './clients/master_controller.js'
+
+const cpu_number = cpus().length
 
 const PORT = parseInt(process.argv[2]) || 3000
 

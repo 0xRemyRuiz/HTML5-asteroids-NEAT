@@ -53,8 +53,8 @@ export default (current_game, ws, object) => {
   if (ws === null) {
     current_game.generation_number = 0
     current_game.pop_idx = 0
-    current_game.population_size = 15
-    current_game.population = new Population(15)
+    current_game.population_size = 50
+    current_game.population = new Population(current_game.population_size)
     current_game.population.create_new_node('ident', 'input')
     current_game.population.create_new_node('ident', 'input')
     current_game.population.create_new_node('sigmoid', 'output')

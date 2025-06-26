@@ -106,6 +106,9 @@ function draw_text_link(ctx, nodes, connection) {
 const resize_network_canva = (network = null) => {
   if (network) {
     network_phenotype = network
+    if (network_viz_test_mode) {
+      network_viz_test_mode = false
+    }
   } else if (network_phenotype === null) {
     network_phenotype = test_data
     network_viz_test_mode = true
