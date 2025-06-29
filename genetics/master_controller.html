@@ -34,7 +34,7 @@
     </ul>
   </div>
   <script type="text/javascript">
-    var webSocketConnected = false, webSocketInstance = null, no_game = true, WEBSOCKET_PORT = 3000, command_to_send = null
+    var webSocketConnected = false, webSocketInstance = null, no_game = true, WEBSOCKET_PORT = 3000, command_to_send = null, last_state = null
     var $status = null,
         $game_name = null,
         $client_number = null,
@@ -43,6 +43,10 @@
         $number_finished_game = null,
         $total_population = null,
         $available_individuals = null
+
+    function play_sound(sound_file) {
+      return new Audio('sound/'+sound_file).play()
+    }
 
     function send_command() {
       const $commander = $('#commander')
@@ -127,6 +131,16 @@
               $total_population.html(parsedData.total_population)
               $available_individuals.html(parsedData.available_individuals)
             }
+          }
+        }
+
+        if (parsedData.status) {
+          if (last_state !== 'finished' && parsedData.status === 'finished') {
+            play_sound('notification_bell.wav')
+            last_state = 'finished'
+          } else if (last_state !== 'severance' && parsedData.status === 'severance') {
+            play_sound('data_scanner_alarm.wav')
+            last_state = 'severance'
           }
         }
 

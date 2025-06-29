@@ -306,6 +306,44 @@ export default class Network {
     return this.#hidden_nodes[id]
   }
 
+  number_of_severed_node() {
+    let total_number_of_severed_nodes = 0
+
+    const adjacency = {}
+    for (let k in this.#connections) {
+      const conn = this.#connections[k].get()
+      if (adjacency[conn.from] === undefined) {
+        adjacency[conn.from] = []
+      }
+      adjacency[conn.from].push(parseInt(conn.to))
+    }
+
+    const visited = new Set()
+    const dfs = (node_id) => {
+      node_id = parseInt(node_id)
+      if (visited.has(node_id)) {
+        return
+      }
+
+      visited.add(node_id)
+      let has_connection = false
+      for (let k in adjacency[node_id]) {
+        dfs(adjacency[node_id][k])
+        has_connection = true
+      }
+
+      if (!has_connection && this.#nodes[node_id].get_type() !== 'output') {
+        total_number_of_severed_nodes++
+      }
+    }
+
+    for (let k in this.#input_nodes) {
+      dfs(this.#input_nodes[k].get_id())
+    }
+
+    return total_number_of_severed_nodes
+  }
+
   update_insights() {
     // 
     // STEP 1

@@ -5,6 +5,7 @@ import Node from './node.js'
 import Connection from './connection.js'
 
 import prng from '../libs/prng.js'
+import reporter from '../libs/reporter.js'
 
 // TODO: eventually refactor and globalize this utility function
 // check function has similar behavior than compareFn from sort builtin function
@@ -336,7 +337,13 @@ export default class Population {
       }
     }
 
-    return new Network(this.#input_nodes, this.#output_nodes, hidden_nodes, connections)
+    const offspring = new Network(this.#input_nodes, this.#output_nodes, hidden_nodes, connections)
+    if (offspring.number_of_severed_node() > 0) {
+      reporter.add_report({type: 'error', name: 'severance', seed: prng.seed, parent1, parent2, offspring})
+      throw new Error('severance')
+    }
+
+    return offspring
   }
 
   /*

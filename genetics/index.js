@@ -5,6 +5,9 @@ import { cpus } from 'os'
 import xor from './clients/xor.js' 
 import asteroids from './clients/asteroids.js'
 import master_controller from './clients/master_controller.js'
+import report_visualizer from './clients/report_visualizer.js'
+
+import reporter from './libs/reporter.js'
 
 const cpu_number = cpus().length
 
@@ -67,6 +70,8 @@ wss.on('connection', (ws) => {
           ws.game = object.game
           // TODO: hook in new client with the same game id
           // lock + start new game with next NN in queue
+        } else if (object.msg === 'report_visualizer') {
+          ws.report_visualizer = true
         }
         ws.not_initialized = false
       }
@@ -86,15 +91,20 @@ wss.on('connection', (ws) => {
       }
 
       //
-      // Game clients
+      // Game clients & Report visualizers
       //
       // TODO: maybe check if last computation has finished and if not skip the message
       if (ws.is_master === false) {
         // TODO: handle client order spread if current_game.game_order !== ws.last_order
         if (ws.game === current_game.name && current_game.name === 'xor') {
           xor(current_game, ws, object)
+
         } else if (ws.game === current_game.name && current_game.name === 'asteroids') {
           asteroids(current_game, ws, object)
+
+        // reporter controller
+        } else if (ws.report_visualizer && ws.get_report) {
+          report_visualizer(current_game, object)
         }
 
       } else {
@@ -116,7 +126,11 @@ wss.on('connection', (ws) => {
       }
 
     } catch (e) {
-      console.error(e)
+      if (e.message === 'severance') {
+        current_game.status = 'severance'
+      } else {
+        console.error(e)
+      }
     }
   })
 })

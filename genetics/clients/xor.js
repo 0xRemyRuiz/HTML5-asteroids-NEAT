@@ -34,6 +34,10 @@ var test_data = {
   ],
 }
 
+// TODO: control recent fitness result to see if we have to stop the training
+const control_and_stop = () => {
+}
+
 const assign_idx = (current_game, ws) => {
   for (const k in current_game.available_individuals) {
     ws.assigned_individual_idx = current_game.available_individuals[k]
