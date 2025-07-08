@@ -103,8 +103,8 @@ wss.on('connection', (ws) => {
           asteroids(current_game, ws, object)
 
         // reporter controller
-        } else if (ws.report_visualizer && ws.get_report) {
-          report_visualizer(current_game, object)
+        } else if (ws.report_visualizer && object.get_report) {
+          report_visualizer(current_game, ws, object)
         }
 
       } else {

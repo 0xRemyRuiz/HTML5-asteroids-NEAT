@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script type="text/javascript" src="../libs/jquery-3.7.1.min.js"></script>
+  <script type="text/javascript" src="../../libs/jquery-3.7.1.min.js"></script>
   <style type="text/css">
     #no-websocket { color: orange }
     h3 { margin: 2px 0 }
   </style>
-  <title>Report Visualizer</title>
+  <title>Debug Reproduction</title>
 </head>
 <body>
   <button id="no-websocket" onclick="addWebSocketListeners()">Connect to websocket</button>
-  <h3>Report Visualization - <button onclick="get_report()">get latest report</button></h3>
+  <h3>Debug Reproduction - <button onclick="get_report()">get data</button></h3>
   <div id="report-container"></div>
-  <script type="text/javascript" src="../commons/network_visual.js"></script>
+  <script type="text/javascript" src="../../commons/network_visual.js"></script>
   <script type="text/javascript">
     WEBSOCKET_PORT = 3000
     var webSocketConnected = false, webSocketInstance = null
@@ -28,7 +28,7 @@
       let template = ''
       // reporter.add_report({type: 'error', name: 'severance', seed: prng.seed, parent1, parent2, offspring})
       if (obj.parent1 && obj.parent2) {
-        template += '<h4>Report for severance with seed: <span style="text-decoration: underline">'+obj.seed+'</span></h4>'
+        template += '<h4>Debug report result of type: '+obj.type+'</h4>'
         template += '<h5>Parent 1</h5>'
         template += '<canvas id="parent1"></canvas>'
         template += '<h5>Parent 2</h5>'

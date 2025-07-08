@@ -244,108 +244,6 @@ export default class Population {
     this.#create_new_specie(network)
   }
 
-  #reproduce(parent1, parent2, decimal_check = 1) {
-    // local utility functions
-    function get_rand(e1, e2) {
-      return prng.do.random() * 2 < 1 ? e1 : e2
-    }
-    // there is a huge side effect out of setting nodes from connection gene
-    // it's that later genes crush the earlier ones, I'm not sure of the impact of this innovation
-    function set_gene_with_nodes(connections, hidden_nodes, parent_object, innov) {
-      const connection = parent_object.p.get_connection(innov)
-      const conn = connection.get()
-      const from_id = conn.from, to_id = conn.to
-      const addon_connections = {}, addon_hidden_nodes = {}
-      addon_connections[conn.innov] = connection
-      if (parent_object.hn[from_id]) {
-        addon_hidden_nodes[parent_object.hn[from_id].get().id] = parent_object.hn[from_id]
-      }
-      if (parent_object.hn[to_id]) {
-        addon_hidden_nodes[parent_object.hn[to_id].get().id] = parent_object.hn[to_id]
-      }
-      Object.assign(connections, addon_connections)
-      Object.assign(hidden_nodes, addon_hidden_nodes)
-    }
-
-    if (parent1 == undefined || parent2 == undefined)
-      console.warn('reproduce() -> parent '+(parent1 == undefined ? '1' : '2')+' is undefined, fallback to asexual reproduction')
-    // asexual reproduction
-    if (parent1 === parent2) {
-      return parent1.get_copy()
-    }
-
-    // sexual reproduction
-    let p1 = parent1, p2 = parent2
-    let nc1 = p1.get_all_connections_with_weight(), nc2 = p2.get_all_connections_with_weight()
-    // swap objects if necessary so that parent1 is always the one with the smallest number of connections
-    if (nc1[nc1.length - 1].innov > nc2[nc2.length - 1].innov) {
-      [p1, nc1, p2, nc2] = [p2, nc2, p1, nc1]
-    }
-    const l1 = nc1.length, l2 = nc2.length
-    const hn1 = p1.get_all_hidden_nodes(), hn2 = p2.get_all_hidden_nodes()
-    // we use normalized fitness so we compare only the highest decimals
-    // this is used to avoid comparisons like 12345678 != 12345679
-    const normalized_fitness1 = Math.round(p1.get_fitness() / decimal_check)
-    const normalized_fitness2 = Math.round(p2.get_fitness() / decimal_check)
-    const connections = {}, hidden_nodes = {}
-
-    // if fitness of both is comparable, offspring is a perfect merge of both
-    if (normalized_fitness1 === normalized_fitness2) {
-      // disjoints and common genes
-      let i = 0, j = 0
-      while (i < l1 && j < l2) {
-        if (nc1[i].innov === nc2[j].innov) {
-          const random_parent = get_rand({p: p1, hn: hn1}, {p: p2, hn: hn2})
-          set_gene_with_nodes(connections, hidden_nodes, random_parent, nc1[i].innov)
-          i++; j++
-        } else if (nc1[i].innov < nc2[j].innov) {
-          set_gene_with_nodes(connections, hidden_nodes, {p: p1, hn: hn1}, nc1[i].innov)
-          i++
-        } else {
-          set_gene_with_nodes(connections, hidden_nodes, {p: p2, hn: hn2}, nc2[j].innov)
-          j++
-        }
-      }
-
-      // excess genes
-      if (l1 !== l2) {
-        if (l1 > l2) {
-          while (i < l1) {
-            set_gene_with_nodes(connections, hidden_nodes, {p: p1, hn: hn1}, nc1[i].innov)
-            i++
-          }
-        } else {
-          while (j < l2) {
-            set_gene_with_nodes(connections, hidden_nodes, {p: p2, hn: hn2}, nc2[i].innov)
-            j++
-          }
-        }
-      }
-
-    // if network1 is more fit, we inherit all from it
-    } else if (normalized_fitness1 > normalized_fitness2) {
-      for (let i = 0; i < l1; i++) {
-        set_gene_with_nodes(connections, hidden_nodes, {p: p1, hn: hn1}, nc1[i].innov)
-        i++
-      }
-
-    // else it's network2 we inherit all from
-    } else {
-      for (let j = 0; j < l2; j++) {
-        set_gene_with_nodes(connections, hidden_nodes, {p: p2, hn: hn2}, nc2[j].innov)
-        j++
-      }
-    }
-
-    const offspring = new Network(this.#input_nodes, this.#output_nodes, hidden_nodes, connections)
-    if (offspring.number_of_severed_node() > 0) {
-      reporter.add_report({type: 'error', name: 'severance', seed: prng.seed, parent1, parent2, offspring})
-      throw new Error('severance')
-    }
-
-    return offspring
-  }
-
   /*
    * Public methods
    */
@@ -471,6 +369,109 @@ export default class Population {
     this.#species[0].members = members
   }
 
+  reproduce(parent1, parent2, decimal_check = 1) {
+    // local utility functions
+    function get_rand(e1, e2) {
+      return prng.do.random() * 2 < 1 ? e1 : e2
+    }
+    // there is a huge side effect out of setting nodes from connection gene
+    // it's that later genes crush the earlier ones, I'm not sure about the impact of this innovation
+    function set_gene_with_nodes(connections, hidden_nodes, parent_object, innov) {
+      const connection = parent_object.p.get_connection(innov)
+      const conn = connection.get()
+      const from_id = conn.from, to_id = conn.to
+      const addon_connections = {}, addon_hidden_nodes = {}
+      addon_connections[conn.innov] = connection
+      if (parent_object.hn[from_id]) {
+        addon_hidden_nodes[parent_object.hn[from_id].get().id] = parent_object.hn[from_id]
+      }
+      if (parent_object.hn[to_id]) {
+        addon_hidden_nodes[parent_object.hn[to_id].get().id] = parent_object.hn[to_id]
+      }
+      Object.assign(connections, addon_connections)
+      Object.assign(hidden_nodes, addon_hidden_nodes)
+    }
+
+    if (parent1 == undefined || parent2 == undefined)
+      console.warn('reproduce() -> parent '+(parent1 == undefined ? '1' : '2')+' is undefined, fallback to asexual reproduction')
+    // asexual reproduction
+    if (parent1 === parent2) {
+      return parent1.get_copy()
+    }
+
+    // sexual reproduction
+    let p1 = parent1, p2 = parent2
+    let nc1 = p1.get_all_connections_with_weight(), nc2 = p2.get_all_connections_with_weight()
+    // swap objects if necessary so that parent1 is always the one with the smallest number of connections
+    if (nc1[nc1.length - 1].innov > nc2[nc2.length - 1].innov) {
+      [p1, nc1, p2, nc2] = [p2, nc2, p1, nc1]
+    }
+    const l1 = nc1.length, l2 = nc2.length
+    const hn1 = p1.get_all_hidden_nodes(), hn2 = p2.get_all_hidden_nodes()
+    // we use normalized fitness so we compare only the highest decimals
+    // this is used to avoid comparisons like 12345678 != 12345679
+    // TODO: check the usefulness of this and the potential damage also
+    const normalized_fitness1 = Math.round(p1.get_fitness() / decimal_check)
+    const normalized_fitness2 = Math.round(p2.get_fitness() / decimal_check)
+    const connections = {}, hidden_nodes = {}
+
+    // if fitness of both is comparable, offspring is a perfect merge of both
+    // in the other 1 cases, disjoint and excess are taken from the fittest
+
+    const is_equal = normalized_fitness1 === normalized_fitness2
+    const nc1Sup = normalized_fitness1 > normalized_fitness2
+
+    // disjoints and common genes
+    let i = 0, j = 0
+    while (i < l1 && j < l2) {
+      if (nc1[i].innov === nc2[j].innov) {
+        const random_parent = get_rand({p: p1, hn: hn1}, {p: p2, hn: hn2})
+        set_gene_with_nodes(connections, hidden_nodes, random_parent, nc1[i].innov)
+        i++; j++
+      } else if (nc1[i].innov < nc2[j].innov) {
+        if (is_equal || nc1Sup) {
+          set_gene_with_nodes(connections, hidden_nodes, {p: p1, hn: hn1}, nc1[i].innov)
+        }
+        i++
+      } else {
+        if (is_equal || !nc1Sup) {
+          set_gene_with_nodes(connections, hidden_nodes, {p: p2, hn: hn2}, nc2[j].innov)
+        }
+        j++
+      }
+    }
+
+    // excess genes
+    if (l1 !== l2) {
+      if (l1 > l2 && (is_equal || nc1Sup)) {
+        while (i < l1) {
+          set_gene_with_nodes(connections, hidden_nodes, {p: p1, hn: hn1}, nc1[i].innov)
+          i++
+        }
+      } else if (is_equal || !nc1Sup) {
+        while (j < l2) {
+          set_gene_with_nodes(connections, hidden_nodes, {p: p2, hn: hn2}, nc2[j].innov)
+          j++
+        }
+      }
+    }
+
+    const offspring = new Network(this.#input_nodes, this.#output_nodes, hidden_nodes, connections)
+    if (offspring.number_of_severed_node() > 0) {
+      reporter.add_report({
+        type: 'error',
+        name: 'severance',
+        seed: prng.seed,
+        parent1: (parent1 ? parent1.get_phenotype() : {}),
+        parent2: (parent2 ? parent2.get_phenotype() : {}),
+        offspring: (offspring ? offspring.get_phenotype() : {}),
+      })
+      throw new Error('severance')
+    }
+
+    return offspring
+  }
+
   breed_new_population() {
     // DEBUG
       // const chain_mutate = (network_id, iteration) => {
@@ -584,7 +585,7 @@ export default class Population {
       while (specie.offspring_target-- > 0) {
         const parent1 = specie.members[Math.floor(prng.do.random() * len)]
         const parent2 = specie.members[Math.floor(prng.do.random() * len)]
-        this.#networks.push(this.#reproduce(parent1, parent2, decimal_check))
+        this.#networks.push(this.reproduce(parent1, parent2, decimal_check))
         this.#mutate_network_by_id(this.#networks.length - 1)
         this.#networks[this.#networks.length - 1].set_specie(specie.id)
       }

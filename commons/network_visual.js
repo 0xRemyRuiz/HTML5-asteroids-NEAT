@@ -103,7 +103,7 @@ function draw_text_link(ctx, nodes, connection) {
   }
 }
 
-const resize_network_canva = (network = null) => {
+const resize_network_canva = (network = null, $specific_canva = undefined) => {
   if (network) {
     network_phenotype = network
     if (network_viz_test_mode) {
@@ -118,12 +118,20 @@ const resize_network_canva = (network = null) => {
     return
   }
 
+  if ($specific_canva) {
+    $network_canva = $specific_canva[0]
+    $nc_context = $network_canva.getContext('2d')
+  }
+
   if ($network_canva === null) {
     $network_canva = $('#network-visualization')[0]
     $nc_context = $network_canva.getContext('2d')
   }
 
-  if ($("#canvas")[0]) {
+  if ($specific_canva) {
+    $network_canva.width = $specific_canva.width()
+    $network_canva.height = $specific_canva.height()
+  } else if ($("#canvas")[0]) {
     $network_canva.width = $(window).width() - $("#canvas").width() - 20
     $network_canva.height = $("#canvas").height() - $network_canva.offsetTop - 20
   } else {

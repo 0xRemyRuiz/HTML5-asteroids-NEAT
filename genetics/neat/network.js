@@ -103,7 +103,7 @@ export default class Network {
     distribution curve might be interesting. Still the final fitness depends on base calculation.
     Here `m / n` is used instead of `1 / n` to not penalize NN with huge number of input and output.
   */
-  set_fitness(fitness, m) {
+  set_fitness(fitness, m = 0) {
     // Idea is set aside for the moment
     // const m = this.#input_nodes.length + this.#output_nodes.length
     // this.#fitness = score * (1 + m / (m + this.#n))
@@ -332,8 +332,12 @@ export default class Network {
         has_connection = true
       }
 
-      if (!has_connection && this.#nodes[node_id].get_type() !== 'output') {
-        total_number_of_severed_nodes++
+      if (!has_connection) {
+        const node_type = this.#nodes[node_id].get_type()
+        if (node_type !== 'output' && node_type !== 'bias') {
+          console.log("SEVERANCE at node", node_id)
+          total_number_of_severed_nodes++
+        }
       }
     }
 
