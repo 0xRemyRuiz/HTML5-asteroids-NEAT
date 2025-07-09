@@ -168,7 +168,7 @@ export default class Population {
     this.#species.push({
       id: this.#specie_id,
       // TODO: parametrize this
-      stagnation_countdown: 3 + 1,
+      stagnation_countdown: 3,
       best_fitness: representative.get_fitness(),
       members: [representative],
       representative: representative,
@@ -294,6 +294,7 @@ export default class Population {
     this.#mutate_network_by_id(network_idx)
     return this.#networks[network_idx]
   }
+  // !DEBUG ONLY
 
   create_new_node(activation_name, type = 'hidden', parent = null) {
     // TODO: eventually ensure that input and output nodes can't be added after initialization
@@ -485,8 +486,19 @@ export default class Population {
       // }
     // !DEBUG
 
-    const old_networks = this.#networks
-    this.#networks = []
+    // TODO: parametrize this
+    const global_elitism = true
+    const local_elitism = false
+
+    // 0. Overall elitism
+    let global_elites = []
+    let old_networks = this.#networks
+    if (global_elitism) {
+      this.#networks.sort((a, b) => a.get_fitness() - b.get_fitness())
+      global_elites = this.#networks.slice(0, Math.floor(this.#networks.length * 0.2))
+      old_networks = this.#networks.slice(-(this.#networks.length - global_elites.length))
+    }
+
     // 2. (Re)Speciation
     for (let k in this.#species) {
       this.#species[k].members = []
@@ -495,17 +507,22 @@ export default class Population {
     this.#current_best_fitness = 0
     this.#current_worst_fitness = Infinity
     // loop through current population, respeciating
-    for (let k in old_networks) {
-      const network_fitness = old_networks[k].get_fitness()
-      this.#speciate(old_networks[k], network_fitness)
-      this.#current_total_fitness += network_fitness
-      if (network_fitness > this.#current_best_fitness) {
-        this.#current_best_fitness = network_fitness
-      }
-      if (network_fitness < this.#current_worst_fitness) {
-        this.#current_worst_fitness = network_fitness
+    const respeciate = (current_networks) => {
+      for (let k in current_networks) {
+        const network_fitness = current_networks[k].get_fitness()
+        this.#speciate(current_networks[k], network_fitness)
+        this.#current_total_fitness += network_fitness
+        if (network_fitness > this.#current_best_fitness) {
+          this.#current_best_fitness = network_fitness
+        }
+        if (network_fitness < this.#current_worst_fitness) {
+          this.#current_worst_fitness = network_fitness
+        }
       }
     }
+    respeciate(old_networks)
+    respeciate(global_elites)
+    this.#networks = global_elites
 
     // 3. Remove stagnant species
     let global_adjusted_fitness = 0
@@ -514,8 +531,7 @@ export default class Population {
       const specie = this.#species[i]
       specie.stagnation_countdown--
       // TODO: parametrize minimum size of specie
-      if ((specie.stagnation_countdown > 0 && specie.members.length > 1)
-          || this.#species.length === 1) {
+      if (specie.stagnation_countdown > 0 && specie.members.length > 1) {
         // 4. Share fitness (explicit fitness sharing)
         specie.total_adjusted_fitness = 0
         // calculate adjusted fitness
@@ -566,7 +582,10 @@ export default class Population {
     let current_pop = 0
     for (let i = this.#species.length - 1; i >= 0; i--) {
       const specie = this.#species[i]
-      const elites = specie.members.slice(0, Math.floor(specie.members.length * 0.2))
+      let elites = []
+      if (local_elitism) {
+        elites = specie.members.slice(0, Math.floor(specie.members.length * 0.2))
+      }
       specie.offspring_target += per_specie_missing_offspring - elites.length
       current_pop += specie.offspring_target + elites.length
       // complement population using the best specie
